@@ -757,75 +757,86 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         
         // 确认导入
-        if (confirm("确定要导入这些数据吗？这将覆盖当前的数据。")) {
-          console.log("用户确认导入，开始保存数据");
-          
-          // 使用Promise处理异步存储操作
-          const savePromises = [];
-          
-          // 保存备忘录数据
-          if (data.memos) {
-            savePromises.push(new Promise((resolve) => {
-              chrome.storage.local.set({ memos: data.memos }, () => {
-                console.log("备忘录数据保存完成");
-                resolve();
-              });
-            }));
-          }
-          
-          // 保存模板数据
-          if (data.templates) {
-            savePromises.push(new Promise((resolve) => {
-              chrome.storage.local.set({ templates: data.templates }, () => {
-                console.log("模板数据保存完成");
-                resolve();
-              });
-            }));
-          }
-          
-          // 保存位置数据
-          if (data.positions) {
-            const positionPromises = Object.keys(data.positions).map(key => {
-              return new Promise((resolve) => {
-                const obj = {};
-                obj[key] = data.positions[key];
-                chrome.storage.local.set(obj, () => {
-                  console.log(`位置数据保存完成: ${key}`);
+        showDialog({
+          title: "确认导入",
+          message: "确定要导入这些数据吗？这将覆盖当前的数据。",
+          type: "confirm",
+          onConfirm: () => {
+            console.log("用户确认导入，开始保存数据");
+            
+            // 使用Promise处理异步存储操作
+            const savePromises = [];
+            
+            // 保存备忘录数据
+            if (data.memos) {
+              savePromises.push(new Promise((resolve) => {
+                chrome.storage.local.set({ memos: data.memos }, () => {
+                  console.log("备忘录数据保存完成");
                   resolve();
                 });
-              });
-            });
-            savePromises.push(...positionPromises);
-          }
-          
-          // 等待所有存储操作完成
-          Promise.all(savePromises).then(() => {
-            console.log("所有数据保存完成");
+              }));
+            }
             
-            // 验证数据是否正确保存
-            chrome.storage.local.get(null, (result) => {
-              console.log("验证保存结果:", {
-                memos: result.memos ? Object.keys(result.memos).length : 0,
-                templates: result.templates ? Object.keys(result.templates).length : 0
+            // 保存模板数据
+            if (data.templates) {
+              savePromises.push(new Promise((resolve) => {
+                chrome.storage.local.set({ templates: data.templates }, () => {
+                  console.log("模板数据保存完成");
+                  resolve();
+                });
+              }));
+            }
+            
+            // 保存位置数据
+            if (data.positions) {
+              const positionPromises = Object.keys(data.positions).map(key => {
+                return new Promise((resolve) => {
+                  const obj = {};
+                  obj[key] = data.positions[key];
+                  chrome.storage.local.set(obj, () => {
+                    console.log(`位置数据保存完成: ${key}`);
+                    resolve();
+                  });
+                });
               });
+              savePromises.push(...positionPromises);
+            }
+            
+            // 等待所有存储操作完成
+            Promise.all(savePromises).then(() => {
+              console.log("所有数据保存完成");
               
-              // 显示成功提示
-              showToast("数据导入成功！", "success");
-              
-              // 刷新页面显示
-              loadSavedSites();
-              loadTemplates();
-              
-              // 显示弹窗确认导入成功
-              setTimeout(() => {
-                alert(`数据导入成功!\n- 备忘录: ${result.memos ? Object.keys(result.memos).length : 0}个\n- 模板: ${result.templates ? Object.keys(result.templates).length : 0}个`);
-              }, 800);
+              // 验证数据是否正确保存
+              chrome.storage.local.get(null, (result) => {
+                console.log("验证保存结果:", {
+                  memos: result.memos ? Object.keys(result.memos).length : 0,
+                  templates: result.templates ? Object.keys(result.templates).length : 0
+                });
+                
+                // 显示成功提示
+                showToast("数据导入成功！", "success");
+                
+                // 刷新页面显示
+                loadSavedSites();
+                loadTemplates();
+                
+                // 显示弹窗确认导入成功
+                showDialog({
+                  title: "扩展程序网站备忘录提示",
+                  message: "数据导入成功！",
+                  type: "success",
+                  data: {
+                    "备忘录": `${result.memos ? Object.keys(result.memos).length : 0}个`,
+                    "模板": `${result.templates ? Object.keys(result.templates).length : 0}个`
+                  }
+                });
+              });
+            }).catch(err => {
+              console.error("保存数据时出错:", err);
+              showToast("导入过程中出错: " + err.message, "error");
             });
-          }).catch(err => {
-            console.error("保存数据时出错:", err);
-            showToast("导入过程中出错: " + err.message, "error");
-          });
-        }
+          }
+        });
       } catch (error) {
         console.error("导入解析失败:", error);
         showToast("导入失败: " + error.message, "error");
@@ -888,5 +899,209 @@ document.addEventListener("DOMContentLoaded", () => {
       // 动画结束后移除元素
       setTimeout(() => toast.remove(), 300);
     }, 3000);
+  }
+  
+  // 通用对话框组件
+  function showDialog({ 
+    title = "提示", 
+    message = "", 
+    type = "info", // info, success, warning, confirm
+    data = null,
+    onConfirm = null,
+    onCancel = null
+  }) {
+    // 创建对话框容器
+    const dialogOverlay = document.createElement('div');
+    dialogOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    `;
+
+    // 创建对话框内容
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      width: 280px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      animation: dialogSlideIn 0.3s ease-out;
+    `;
+
+    // 添加动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes dialogSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // 获取图标和颜色
+    let icon = '';
+    let color = '#7c4dff';
+    switch (type) {
+      case 'success':
+        icon = '<polyline points="20 6 9 17 4 12"></polyline>';
+        color = '#4CAF50';
+        break;
+      case 'warning':
+        icon = '<path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>';
+        color = '#FF9800';
+        break;
+      case 'confirm':
+        icon = '<path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+        color = '#7c4dff';
+        break;
+      default:
+        icon = '<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+        color = '#2196F3';
+    }
+
+    // 设置对话框内容
+    dialog.innerHTML = `
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="
+          background: ${color};
+          width: 48px;
+          height: 48px;
+          border-radius: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 16px;
+        ">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            ${icon}
+          </svg>
+        </div>
+        <h2 style="
+          margin: 0;
+          color: #333;
+          font-size: 18px;
+          font-weight: 600;
+        ">${title}</h2>
+        <p style="
+          margin: 8px 0 0;
+          color: #666;
+          font-size: 14px;
+          line-height: 1.5;
+        ">${message}</p>
+      </div>
+      ${data ? `
+        <div style="
+          background: #f5f5f5;
+          border-radius: 8px;
+          padding: 12px;
+          margin-bottom: 20px;
+        ">
+          ${Object.entries(data).map(([key, value]) => `
+            <div style="
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 8px;
+              font-size: 14px;
+            ">
+              <span style="color: #666;">${key}:</span>
+              <span style="color: ${color}; font-weight: 600;">${value}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      <div style="
+        display: flex;
+        gap: 10px;
+        ${type === 'confirm' ? 'justify-content: space-between' : 'justify-content: center'}
+      ">
+        ${type === 'confirm' ? `
+          <button class="cancel-btn" style="
+            flex: 1;
+            padding: 10px;
+            background: #f5f5f5;
+            color: #666;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+          ">取消</button>
+        ` : ''}
+        <button class="confirm-btn" style="
+          flex: 1;
+          padding: 10px;
+          background: ${color};
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">${type === 'confirm' ? '确定' : '知道了'}</button>
+      </div>
+    `;
+
+    // 绑定按钮事件
+    const confirmBtn = dialog.querySelector('.confirm-btn');
+    confirmBtn.addEventListener('mouseenter', () => {
+      confirmBtn.style.filter = 'brightness(0.9)';
+      confirmBtn.style.transform = 'translateY(-1px)';
+    });
+    confirmBtn.addEventListener('mouseleave', () => {
+      confirmBtn.style.filter = 'none';
+      confirmBtn.style.transform = 'none';
+    });
+    confirmBtn.addEventListener('click', () => {
+      if (onConfirm) onConfirm();
+      dialogOverlay.remove();
+      style.remove();
+    });
+
+    const cancelBtn = dialog.querySelector('.cancel-btn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('mouseenter', () => {
+        cancelBtn.style.background = '#e0e0e0';
+        cancelBtn.style.transform = 'translateY(-1px)';
+      });
+      cancelBtn.addEventListener('mouseleave', () => {
+        cancelBtn.style.background = '#f5f5f5';
+        cancelBtn.style.transform = 'none';
+      });
+      cancelBtn.addEventListener('click', () => {
+        if (onCancel) onCancel();
+        dialogOverlay.remove();
+        style.remove();
+      });
+    }
+
+    // 添加点击背景关闭的功能（仅对非确认类型的对话框）
+    if (type !== 'confirm') {
+      dialogOverlay.addEventListener('click', (e) => {
+        if (e.target === dialogOverlay) {
+          dialogOverlay.remove();
+          style.remove();
+        }
+      });
+    }
+
+    // 将对话框添加到页面
+    dialogOverlay.appendChild(dialog);
+    document.body.appendChild(dialogOverlay);
   }
 }); 

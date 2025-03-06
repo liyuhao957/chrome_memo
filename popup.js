@@ -1,4 +1,44 @@
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("开始绑定基本功能");
+  
+  // 首先绑定导出导入按钮事件
+  try {
+    const exportBtn = document.getElementById("exportDataBtn");
+    if (exportBtn) {
+      console.log("找到导出按钮，绑定事件");
+      exportBtn.addEventListener("click", function() {
+        console.log("导出按钮被点击");
+        exportData();
+      });
+    } else {
+      console.error("未找到导出按钮元素");
+    }
+    
+    const importBtn = document.getElementById("importDataBtn");
+    if (importBtn) {
+      console.log("找到导入按钮，绑定事件");
+      importBtn.addEventListener("click", function() {
+        console.log("导入按钮被点击");
+        document.getElementById("fileInput").click();
+      });
+    } else {
+      console.error("未找到导入按钮元素");
+    }
+    
+    const fileInput = document.getElementById("fileInput");
+    if (fileInput) {
+      console.log("找到文件输入框，绑定事件");
+      fileInput.addEventListener("change", function(event) {
+        console.log("文件选择事件触发");
+        importData(event);
+      });
+    } else {
+      console.error("未找到文件输入元素");
+    }
+  } catch (e) {
+    console.error("绑定导出导入按钮事件时出错:", e);
+  }
+  
   const statusElem = document.getElementById("status");
   const addEditButton = document.getElementById("addEditButton");
   const toggleButton = document.getElementById("toggleButton");
@@ -586,17 +626,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
-  
-  // 导出数据按钮事件
-  document.getElementById("exportDataBtn").addEventListener("click", exportData);
-  
-  // 导入数据按钮事件
-  document.getElementById("importDataBtn").addEventListener("click", () => {
-    document.getElementById("fileInput").click();
-  });
-  
-  // 监听文件选择
-  document.getElementById("fileInput").addEventListener("change", importData);
   
   // 导出数据函数
   function exportData() {

@@ -91,6 +91,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!isQuickAddEnabled && selectionPopup) {
       selectionPopup.style.display = 'none';
     }
+  } else if (message.action === "closeMemo") {
+    // 如果备忘录容器存在，则移除它
+    if (memoContainer) {
+      memoContainer.remove();
+      memoContainer = null;
+    }
   }
 });
 

@@ -311,18 +311,43 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll('.delete-site').forEach(button => {
         button.addEventListener('click', () => {
           const domain = button.dataset.domain;
-          if (confirm(`确定要删除 ${domain} 的备忘录吗？`)) {
-            chrome.runtime.sendMessage(
-              { 
-                action: "deleteMemo", 
-                domain: domain
-              },
-              () => {
-                // 刷新列表
-                loadSavedSites();
-              }
-            );
-          }
+          showDialog({
+            title: "确认删除",
+            message: `确定要删除 ${domain} 的备忘录吗？`,
+            type: "confirm",
+            onConfirm: () => {
+              // 删除备忘录数据
+              chrome.storage.local.get(null, (data) => {
+                // 删除主要数据
+                if (data.memos && data.memos[domain]) {
+                  delete data.memos[domain];
+                  chrome.storage.local.set({ memos: data.memos });
+                }
+
+                // 删除旧格式数据（如果存在）
+                const keysToRemove = [
+                  `memo_${domain}`,
+                  `lastEdited_${domain}`,
+                  `position_${domain}`
+                ];
+
+                chrome.storage.local.remove(keysToRemove, () => {
+                  // 通知当前页面关闭备忘录
+                  chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+                    const currentTab = tabs[0];
+                    chrome.tabs.sendMessage(currentTab.id, {
+                      action: "closeMemo"
+                    });
+                  });
+
+                  // 刷新列表
+                  loadSavedSites();
+                  // 显示成功提示
+                  showToast("备忘录已成功删除", "success");
+                });
+              });
+            }
+          });
         });
       });
       

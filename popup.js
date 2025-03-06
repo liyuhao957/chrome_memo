@@ -146,10 +146,40 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // 获取并显示所有备忘录站点
   function loadSavedSites() {
-    chrome.runtime.sendMessage({ action: "getAllMemos" }, (response) => {
-      console.log("加载站点列表:", response);
-      const memos = response.data || {};
-      const domains = Object.keys(memos);
+    // 首先尝试获取 memos 对象中的所有备忘录
+    chrome.storage.local.get(null, (result) => {
+      console.log("加载所有存储数据:", result);
+      
+      // 初始化备忘录数据对象
+      let memos = result.memos || {};
+      let domains = Object.keys(memos);
+      
+      // 同时检查是否有以 memo_ 开头的单独存储项
+      const memoKeys = Object.keys(result).filter(key => key.startsWith('memo_'));
+      
+      // 如果找到了以 memo_ 开头的键
+      if (memoKeys.length > 0) {
+        // 处理这些单独存储的备忘录
+        memoKeys.forEach(key => {
+          const domain = key.replace('memo_', '');
+          if (!memos[domain]) {
+            // 如果 memos 对象中没有这个域名的数据，添加它
+            memos[domain] = {
+              content: result[key],
+              isVisible: true,
+              lastEdited: result[`lastEdited_${domain}`] || Date.now()
+            };
+            
+            // 将域名添加到域名列表
+            if (!domains.includes(domain)) {
+              domains.push(domain);
+            }
+          }
+        });
+      }
+      
+      console.log("处理后的备忘录数据:", memos);
+      console.log("发现的域名:", domains);
       
       if (!domains || domains.length === 0) {
         console.log("没有保存的备忘录");
@@ -158,17 +188,21 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       
-      console.log("发现备忘录域名:", domains);
+      // 有数据，隐藏空列表提示
       emptyList.style.display = 'none';
       
       // 按照最后编辑时间排序（最新的在前）
-      domains.sort((a, b) => memos[b].lastEdited - memos[a].lastEdited);
+      domains.sort((a, b) => {
+        const timeA = memos[b].lastEdited || 0;
+        const timeB = memos[a].lastEdited || 0;
+        return timeA - timeB;
+      });
       
-      // 构建站点列表，添加复制内容按钮
+      // 构建站点列表
       siteList.innerHTML = domains.map(domain => {
         const memo = memos[domain];
-        const status = memo.isVisible ? "显示" : "隐藏";
-        const date = new Date(memo.lastEdited).toLocaleDateString();
+        const status = memo.isVisible !== false ? "显示" : "隐藏";
+        const date = new Date(memo.lastEdited || Date.now()).toLocaleDateString();
         
         // 修改内容预览的处理
         let contentPreview = "(空备忘录)";
@@ -194,8 +228,8 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
             <div class="site-actions">
               <button class="secondary visit-site" data-domain="${domain}">访问</button>
-              <button class="secondary toggle-site" data-domain="${domain}" data-visible="${memo.isVisible}">
-                ${memo.isVisible ? '隐藏' : '显示'}
+              <button class="secondary toggle-site" data-domain="${domain}" data-visible="${memo.isVisible !== false}">
+                ${memo.isVisible !== false ? '隐藏' : '显示'}
               </button>
               <button class="secondary copy-content" data-domain="${domain}" title="复制备忘录内容">复制</button>
               <button class="secondary save-template" data-domain="${domain}" title="保存为模板">保存模板</button>
@@ -314,29 +348,13 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // 添加初始化模板函数
   function initTemplates() {
-    // 先检查是否有模板，如果没有则创建默认模板
+    // 直接加载已有的模板，不自动创建默认模板
     chrome.runtime.sendMessage({ action: "getAllTemplates" }, (response) => {
       const templates = response.data || {};
       console.log("初始检查模板:", templates);
       
-      if (Object.keys(templates).length === 0) {
-        // 创建一个默认模板
-        chrome.runtime.sendMessage(
-          { 
-            action: "saveTemplate", 
-            name: "常用回复",
-            content: "<p>请问</p>"
-          },
-          () => {
-            console.log("已创建默认模板");
-            // 创建默认模板后再加载模板列表
-            loadTemplates();
-          }
-        );
-      } else {
-        // 已有模板，直接加载
-        loadTemplates();
-      }
+      // 直接加载现有模板，不创建默认模板
+      loadTemplates();
     });
   }
   
@@ -567,5 +585,149 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     });
+  }
+  
+  // 导出数据按钮事件
+  document.getElementById("exportDataBtn").addEventListener("click", exportData);
+  
+  // 导入数据按钮事件
+  document.getElementById("importDataBtn").addEventListener("click", () => {
+    document.getElementById("fileInput").click();
+  });
+  
+  // 监听文件选择
+  document.getElementById("fileInput").addEventListener("change", importData);
+  
+  // 导出数据函数
+  function exportData() {
+    chrome.storage.local.get(null, (data) => {
+      // 获取所有的数据
+      const exportData = {
+        memos: data.memos || {},
+        templates: data.templates || {},
+        // 获取所有位置数据
+        positions: {}
+      };
+      
+      // 找出所有位置数据(position_域名)
+      for (const key in data) {
+        if (key.startsWith('position_')) {
+          exportData.positions[key] = data[key];
+        }
+      }
+      
+      // 设置文件名，包含日期
+      const date = new Date().toISOString().slice(0, 10);
+      const fileName = `chrome_memo_backup_${date}.json`;
+      
+      // 创建Blob并下载
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      
+      // 清理URL对象
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      // 显示成功提示
+      showToast("数据导出成功！");
+    });
+  }
+  
+  // 导入数据函数
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        
+        // 验证数据格式是否正确
+        if (!data || (typeof data !== 'object')) {
+          throw new Error("导入的文件格式不正确");
+        }
+        
+        // 确认导入
+        if (confirm("确定要导入这些数据吗？这将覆盖当前的数据。")) {
+          // 保存备忘录数据
+          if (data.memos) {
+            chrome.storage.local.set({ memos: data.memos });
+          }
+          
+          // 保存模板数据
+          if (data.templates) {
+            chrome.storage.local.set({ templates: data.templates });
+          }
+          
+          // 保存位置数据
+          if (data.positions) {
+            for (const key in data.positions) {
+              const obj = {};
+              obj[key] = data.positions[key];
+              chrome.storage.local.set(obj);
+            }
+          }
+          
+          // 显示成功提示
+          showToast("数据导入成功！");
+          
+          // 刷新页面显示
+          setTimeout(() => {
+            loadSavedSites();
+            loadTemplates();
+          }, 500);
+        }
+      } catch (error) {
+        alert("导入失败: " + error.message);
+      }
+      
+      // 重置文件输入，允许重复选择同一文件
+      document.getElementById("fileInput").value = "";
+    };
+    
+    reader.readAsText(file);
+  }
+  
+  // 显示提示信息
+  function showToast(message) {
+    // 创建提示元素
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      z-index: 10000;
+      transition: opacity 0.3s, transform 0.3s;
+      opacity: 0;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // 显示提示
+    setTimeout(() => {
+      toast.style.opacity = "1";
+      toast.style.transform = "translateX(-50%) translateY(0)";
+    }, 10);
+    
+    // 3秒后隐藏
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateX(-50%) translateY(20px)";
+      
+      // 动画结束后移除元素
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
   }
 }); 

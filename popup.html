@@ -154,6 +154,38 @@
     .saved-sites::-webkit-scrollbar-thumb:hover {
       background: #a0a0a0;
     }
+    /* 添加导入导出按钮样式 */
+    .backup-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .backup-btn {
+      flex: 1;
+      padding: 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      background-color: #f0e6ff;
+      color: #7c4dff;
+      border: 1px solid #e6d8ff;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .backup-btn:hover {
+      background-color: #e6d8ff;
+      transform: translateY(-1px);
+    }
+    
+    .backup-btn svg {
+      width: 16px;
+      height: 16px;
+    }
   </style>
 </head>
 <body>
@@ -188,6 +220,27 @@
     </select>
     <button id="applyQuickTemplate" class="primary small-button">应用</button>
   </div>
+  
+  <div class="divider"></div>
+  
+  <h2>数据备份</h2>
+  <div class="backup-actions">
+    <button id="exportDataBtn" class="backup-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      导出数据
+    </button>
+    <button id="importDataBtn" class="backup-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+      </svg>
+      导入数据
+    </button>
+  </div>
+  
+  <!-- 放在最后，用于导入文件的隐藏input -->
+  <input type="file" id="fileInput" style="display: none;" accept=".json">
   
   <script src="popup.js"></script>
 </body>

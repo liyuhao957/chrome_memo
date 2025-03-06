@@ -40,8 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   const statusElem = document.getElementById("status");
-  const addEditButton = document.getElementById("addEditButton");
-  const toggleButton = document.getElementById("toggleButton");
   const siteList = document.getElementById("siteList");
   const emptyList = document.getElementById("emptyList");
   
@@ -54,43 +52,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const url = new URL(currentTab.url);
     const domain = url.hostname;
     
-    // 查询该域名的备忘录
-    chrome.runtime.sendMessage(
-      { action: "getMemo", domain: domain },
-      (response) => {
-        if (response.data) {
-          const status = response.data.isVisible ? "可见" : "隐藏";
-          statusElem.textContent = `当前网站 (${domain}) 已有备忘录，状态: ${status}`;
-          toggleButton.textContent = response.data.isVisible ? "隐藏备忘录" : "显示备忘录";
-        } else {
-          statusElem.textContent = `当前网站 (${domain}) 没有备忘录`;
-          toggleButton.disabled = true;
-        }
+    // 查询所有存储的数据
+    chrome.storage.local.get(null, (result) => {
+      // 检查新格式数据
+      const hasMemoInNewFormat = result.memos && result.memos[domain];
+      // 检查旧格式数据
+      const hasMemoInOldFormat = result[`memo_${domain}`] !== undefined;
+      
+      if (hasMemoInNewFormat || hasMemoInOldFormat) {
+        statusElem.textContent = `当前网站 (${domain}) 已有备忘录`;
+      } else {
+        statusElem.textContent = `当前网站 (${domain}) 没有备忘录`;
       }
-    );
-  });
-  
-  // 添加/编辑备忘录按钮点击事件
-  addEditButton.addEventListener("click", () => {
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      const currentTab = tabs[0];
-      chrome.tabs.sendMessage(currentTab.id, {
-        action: "openEditor"
-      });
-      // 关闭弹出窗口
-      window.close();
-    });
-  });
-  
-  // 显示/隐藏备忘录按钮点击事件
-  toggleButton.addEventListener("click", () => {
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      const currentTab = tabs[0];
-      chrome.tabs.sendMessage(currentTab.id, {
-        action: "toggleMemo"
-      });
-      // 关闭弹出窗口
-      window.close();
     });
   });
   
@@ -241,7 +214,6 @@ document.addEventListener("DOMContentLoaded", () => {
       // 构建站点列表
       siteList.innerHTML = domains.map(domain => {
         const memo = memos[domain];
-        const status = memo.isVisible !== false ? "显示" : "隐藏";
         const date = new Date(memo.lastEdited || Date.now()).toLocaleDateString();
         
         // 修改内容预览的处理
@@ -257,23 +229,13 @@ document.addEventListener("DOMContentLoaded", () => {
           <li class="site-item">
             <div class="site-info">
               <div class="site-header">
-                <span class="site-label">站点:</span>
-                <span class="site-domain" title="${domain}">${domain}</span>
+                <span class="site-domain">站点：<a href="#" class="visit-site" data-domain="${domain}">${domain}</a></span>
+                <button class="delete-site" data-domain="${domain}">删除</button>
               </div>
               <div class="site-content">
-                <span class="site-label">内容:</span>
-                <span class="site-preview">${contentPreview}</span>
+                <span class="site-memo">内容：${contentPreview}</span>
+                <span class="site-date">最后编辑: ${date}</span>
               </div>
-              <span class="site-date">最后编辑: ${date}</span>
-            </div>
-            <div class="site-actions">
-              <button class="secondary visit-site" data-domain="${domain}">访问</button>
-              <button class="secondary toggle-site" data-domain="${domain}" data-visible="${memo.isVisible !== false}">
-                ${memo.isVisible !== false ? '隐藏' : '显示'}
-              </button>
-              <button class="secondary copy-content" data-domain="${domain}" title="复制备忘录内容">复制</button>
-              <button class="secondary save-template" data-domain="${domain}" title="保存为模板">保存模板</button>
-              <button class="delete-site" data-domain="${domain}">删除</button>
             </div>
           </li>
         `;
@@ -284,26 +246,6 @@ document.addEventListener("DOMContentLoaded", () => {
         button.addEventListener('click', () => {
           const domain = button.dataset.domain;
           chrome.tabs.create({ url: `https://${domain}` });
-        });
-      });
-      
-      // 添加切换可见性按钮事件
-      document.querySelectorAll('.toggle-site').forEach(button => {
-        button.addEventListener('click', () => {
-          const domain = button.dataset.domain;
-          const isVisible = button.dataset.visible === 'true';
-          
-          chrome.runtime.sendMessage(
-            { 
-              action: "updateMemoVisibility", 
-              domain: domain, 
-              isVisible: !isVisible 
-            },
-            () => {
-              // 刷新列表
-              loadSavedSites();
-            }
-          );
         });
       });
       
@@ -348,64 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
               });
             }
           });
-        });
-      });
-      
-      // 添加复制内容按钮事件
-      document.querySelectorAll('.copy-content').forEach(button => {
-        button.addEventListener('click', () => {
-          const domain = button.dataset.domain;
-          chrome.runtime.sendMessage(
-            { action: "getMemo", domain: domain },
-            (response) => {
-              if (response.data && response.data.content) {
-                // 创建临时textarea元素用于复制
-                const textarea = document.createElement('textarea');
-                textarea.value = response.data.content;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                
-                // 显示复制成功提示
-                button.textContent = "已复制!";
-                setTimeout(() => {
-                  button.textContent = "复制";
-                }, 2000);
-              }
-            }
-          );
-        });
-      });
-      
-      // 添加保存为模板按钮事件
-      document.querySelectorAll('.save-template').forEach(button => {
-        button.addEventListener('click', () => {
-          const domain = button.dataset.domain;
-          chrome.runtime.sendMessage(
-            { action: "getMemo", domain: domain },
-            (response) => {
-              if (response.data && response.data.content) {
-                const templateName = prompt("请输入模板名称:", domain + "的备忘录");
-                if (templateName) {
-                  chrome.runtime.sendMessage(
-                    { 
-                      action: "saveTemplate", 
-                      name: templateName,
-                      content: response.data.content
-                    },
-                    () => {
-                      loadTemplates(); // 刷新模板列表
-                      button.textContent = "已保存!";
-                      setTimeout(() => {
-                        button.textContent = "保存模板";
-                      }, 2000);
-                    }
-                  );
-                }
-              }
-            }
-          );
         });
       });
     });
@@ -600,57 +484,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   });
-  
-  // 加载快速模板选择器
-  loadQuickTemplates();
-  
-  // 添加新的快速模板加载函数 - 使用 Chrome Storage API
-  function loadQuickTemplates() {
-    const selector = document.getElementById("quickTemplateSelector");
-    
-    // 使用 Chrome Storage 获取模板
-    chrome.storage.sync.get(['memoTemplates'], (result) => {
-      const templates = result.memoTemplates || {};
-      const templateNames = Object.keys(templates);
-      
-      // 清空现有选项（保留第一个默认选项）
-      while (selector.options.length > 1) {
-        selector.remove(1);
-      }
-      
-      // 添加模板选项
-      templateNames.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        selector.appendChild(option);
-      });
-      
-      // 绑定应用按钮事件
-      document.getElementById("applyQuickTemplate").addEventListener("click", () => {
-        const selectedTemplate = selector.value;
-        if (!selectedTemplate) {
-          alert("请先选择一个模板");
-          return;
-        }
-        
-        // 获取模板内容
-        if (templates[selectedTemplate]) {
-          const content = templates[selectedTemplate].content;
-          
-          // 应用到当前页面
-          chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            const currentTab = tabs[0];
-            chrome.tabs.sendMessage(currentTab.id, {
-              action: "applyTemplate",
-              content: content
-            });
-            window.close();
-          });
-        }
-      });
-    });
-  }
   
   // 导出数据函数
   function exportData() {

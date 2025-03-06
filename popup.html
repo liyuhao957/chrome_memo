@@ -68,65 +68,51 @@
       margin: 0;
     }
     .site-item {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      padding: 12px;
+      background: white;
+    }
+    .site-header {
       display: flex;
-      flex-direction: column;
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      font-size: 13px;
-      background-color: #f9f9f9;
-      border-radius: 6px;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 8px;
-    }
-    .site-item:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-    }
-    .site-info {
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 8px;
-    }
-    .site-header, .site-content {
-      display: flex;
-      align-items: baseline;
-      margin-bottom: 5px;
-    }
-    .site-label {
-      font-weight: bold;
-      color: #555;
-      margin-right: 5px;
-      width: 40px;
-      flex-shrink: 0;
     }
     .site-domain {
-      font-weight: bold;
+      font-weight: 500;
+      color: #333;
+    }
+    .site-domain a {
       color: #7c4dff;
+      text-decoration: none;
+    }
+    .site-domain a:hover {
       text-decoration: underline;
     }
-    .site-preview {
+    .site-content {
       color: #666;
-      font-size: 12px;
+      font-size: 13px;
     }
     .site-date {
-      color: #999;
-      font-size: 11px;
       display: block;
-      margin-top: 5px;
-    }
-    .site-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 5px;
-    }
-    .site-actions button {
-      padding: 4px 8px;
+      color: #999;
       font-size: 12px;
+      margin-top: 4px;
     }
     .delete-site {
-      background-color: #ff6b6b;
+      padding: 4px 8px;
+      background: #ff4d4f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background-color 0.2s;
     }
     .delete-site:hover {
-      background-color: #ff5252;
+      background: #ff7875;
     }
     h2 {
       font-size: 14px;
@@ -193,12 +179,6 @@
   <div class="memo-status" id="status">
     正在检查当前网站的备忘录状态...
   </div>
-  <div class="actions">
-    <button id="addEditButton">添加/编辑备忘录</button>
-    <button id="toggleButton" class="secondary">显示/隐藏备忘录</button>
-  </div>
-  
-  <div class="divider"></div>
   
   <h2>已保存的备忘录站点</h2>
   <div class="saved-sites">
@@ -208,17 +188,6 @@
     <div id="emptyList" class="empty-list" style="display: none;">
       暂无保存的备忘录
     </div>
-  </div>
-  
-  <div class="divider"></div>
-  
-  <h2>快速使用备忘录模板</h2>
-  <div class="template-quick-actions">
-    <select id="quickTemplateSelector" style="flex-grow:1; padding:8px; border-radius:4px; border:1px solid #ddd;">
-      <option value="">选择要使用的模板...</option>
-      <!-- 模板选项会通过JavaScript动态添加 -->
-    </select>
-    <button id="applyQuickTemplate" class="primary small-button">应用</button>
   </div>
   
   <div class="divider"></div>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      width: 320px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+      margin: 0;
+    }
+    h1 {
+      font-size: 16px;
+      margin-top: 0;
+      color: #333;
+    }
+    .memo-status {
+      margin: 15px 0;
+      padding: 12px;
+      background-color: #f5f5f5;
+      border-radius: 8px;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 10px;
+      background-color: #7c4dff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    button:hover {
+      background-color: #6a3de8;
+      transform: translateY(-1px);
+    }
+    button:disabled {
+      background-color: #b4a7d6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .secondary {
+      background-color: #f5f5f5;
+      color: #444;
+      border: 1px solid #ddd;
+    }
+    .secondary:hover {
+      background-color: #eaeaea;
+    }
+    .divider {
+      height: 1px;
+      background-color: #eee;
+      margin: 15px 0;
+    }
+    .saved-sites {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .site-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+    .site-item {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+      background-color: #f9f9f9;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .site-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    .site-info {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 8px;
+    }
+    .site-header, .site-content {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 5px;
+    }
+    .site-label {
+      font-weight: bold;
+      color: #555;
+      margin-right: 5px;
+      width: 40px;
+      flex-shrink: 0;
+    }
+    .site-domain {
+      font-weight: bold;
+      color: #7c4dff;
+      text-decoration: underline;
+    }
+    .site-preview {
+      color: #666;
+      font-size: 12px;
+    }
+    .site-date {
+      color: #999;
+      font-size: 11px;
+      display: block;
+      margin-top: 5px;
+    }
+    .site-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 5px;
+    }
+    .site-actions button {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+    .delete-site {
+      background-color: #ff6b6b;
+    }
+    .delete-site:hover {
+      background-color: #ff5252;
+    }
+    h2 {
+      font-size: 14px;
+      margin: 15px 0 10px 0;
+      color: #555;
+    }
+    .empty-list {
+      color: #888;
+      font-style: italic;
+      text-align: center;
+      padding: 15px 0;
+    }
+    /* 滚动条样式 */
+    .saved-sites::-webkit-scrollbar {
+      width: 8px;
+    }
+    .saved-sites::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    .saved-sites::-webkit-scrollbar-thumb {
+      background: #c5c5c5;
+      border-radius: 4px;
+    }
+    .saved-sites::-webkit-scrollbar-thumb:hover {
+      background: #a0a0a0;
+    }
+  </style>
+</head>
+<body>
+  <h1>网站备忘录</h1>
+  <div class="memo-status" id="status">
+    正在检查当前网站的备忘录状态...
+  </div>
+  <div class="actions">
+    <button id="addEditButton">添加/编辑备忘录</button>
+    <button id="toggleButton" class="secondary">显示/隐藏备忘录</button>
+  </div>
+  
+  <div class="divider"></div>
+  
+  <h2>已保存的备忘录站点</h2>
+  <div class="saved-sites">
+    <ul class="site-list" id="siteList">
+      <!-- 站点列表将通过JavaScript动态添加 -->
+    </ul>
+    <div id="emptyList" class="empty-list" style="display: none;">
+      暂无保存的备忘录
+    </div>
+  </div>
+  
+  <div class="divider"></div>
+  
+  <h2>快速使用备忘录模板</h2>
+  <div class="template-quick-actions">
+    <select id="quickTemplateSelector" style="flex-grow:1; padding:8px; border-radius:4px; border:1px solid #ddd;">
+      <option value="">选择要使用的模板...</option>
+      <!-- 模板选项会通过JavaScript动态添加 -->
+    </select>
+    <button id="applyQuickTemplate" class="primary small-button">应用</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html> 

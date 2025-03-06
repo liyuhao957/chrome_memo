@@ -1,0 +1,723 @@
+/* 备忘录容器样式 */
+.chrome-memo-container {
+  position: fixed;
+  width: 320px;
+  max-height: 350px;
+  background-color: rgba(255, 255, 255, 0.98);
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  z-index: 2147483647;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 14px;
+}
+
+.chrome-memo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #7c4dff;
+  color: white;
+  border-bottom: none;
+  cursor: move;
+  user-select: none;
+  position: relative;
+}
+
+.chrome-memo-header strong {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.chrome-memo-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.chrome-memo-close:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.chrome-memo-site-indicator {
+  padding: 5px 16px;
+  font-size: 12px;
+  background-color: #f0e6ff;
+  color: #7c4dff;
+  border-bottom: 1px solid #e6d8ff;
+  font-weight: 500;
+}
+
+.chrome-memo-content {
+  padding: 16px;
+  max-height: 280px;
+  overflow-y: auto;
+  line-height: 1.5;
+  background-color: white;
+  cursor: pointer;
+  position: relative;
+  text-align: left;
+}
+
+.chrome-memo-content:hover {
+  background-color: #f9f9f9;
+}
+
+.chrome-memo-content:hover::after {
+  content: "点击编辑";
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font-size: 12px;
+  color: #7c4dff;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* 编辑器样式 */
+.chrome-memo-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2147483646;
+  backdrop-filter: blur(2px);
+  transition: all 0.3s ease;
+}
+
+.chrome-memo-editor-container {
+  width: 650px;
+  max-width: 90%;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.chrome-memo-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #7c4dff;
+  color: white;
+  border-bottom: none;
+  font-weight: 500;
+}
+
+.chrome-memo-editor {
+  min-height: 220px;
+  max-height: 400px;
+  padding: 20px;
+  overflow-y: auto;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  margin: 20px;
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  line-height: 1.6;
+}
+
+.chrome-memo-editor-toolbar {
+  display: flex;
+  padding: 10px 20px 0 20px;
+  gap: 8px;
+}
+
+.chrome-memo-editor-toolbar button {
+  padding: 8px 12px;
+  background: #f4f4f4;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  color: #555;
+}
+
+.chrome-memo-editor-toolbar button:hover {
+  background: #e8e8e8;
+  border-color: #ccc;
+}
+
+.chrome-memo-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 20px 20px;
+  gap: 12px;
+}
+
+.chrome-memo-editor-save,
+.chrome-memo-editor-cancel,
+.chrome-memo-editor-close {
+  cursor: pointer;
+  position: relative;
+  z-index: 2147483647;
+  outline: none;
+  border-radius: 4px;
+  font-size: 14px;
+  padding: 10px 18px;
+  transition: all 0.2s ease;
+}
+
+.chrome-memo-editor-save:hover,
+.chrome-memo-editor-cancel:hover,
+.chrome-memo-editor-close:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.chrome-memo-editor-save {
+  background-color: #7c4dff;
+  color: white;
+  border: none;
+  box-shadow: 0 2px 5px rgba(124, 77, 255, 0.3);
+}
+
+.chrome-memo-editor-save:hover {
+  box-shadow: 0 4px 8px rgba(124, 77, 255, 0.4);
+}
+
+.chrome-memo-editor-cancel {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  color: #444;
+}
+
+/* 美化滚动条 */
+.chrome-memo-editor::-webkit-scrollbar,
+.chrome-memo-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chrome-memo-editor::-webkit-scrollbar-track,
+.chrome-memo-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.chrome-memo-editor::-webkit-scrollbar-thumb,
+.chrome-memo-content::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 4px;
+}
+
+.chrome-memo-editor::-webkit-scrollbar-thumb:hover,
+.chrome-memo-content::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+.chrome-memo-editor-site-info {
+  padding: 10px 20px;
+  background-color: #f0e6ff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.chrome-memo-editor-site-info .site-label {
+  font-weight: bold;
+  color: #555;
+  margin-right: 5px;
+}
+
+.chrome-memo-editor-site-info .site-value {
+  color: #7c4dff;
+  font-weight: bold;
+}
+
+.chrome-memo-editor-label {
+  padding: 10px 20px 0;
+  font-weight: bold;
+  color: #555;
+}
+
+.chrome-memo-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #999;
+  font-style: italic;
+  pointer-events: none;
+}
+
+/* 移除之前的 placeholder 样式，使用更可靠的方式 */
+.chrome-memo-editor[placeholder]:empty:before {
+  content: none;
+}
+
+/* 添加编辑按钮和内容交互样式 */
+.chrome-memo-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chrome-memo-edit {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.chrome-memo-edit:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* 模板管理样式 */
+.template-manager {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.template-list {
+  flex: 1;
+  min-height: 100px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.template-item {
+  padding: 8px 12px;
+  margin: 4px 0;
+  background: #f5f5f5;
+  border-radius: 4px;
+  cursor: move;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.template-item:hover {
+  background: #e0e0e0;
+}
+
+.template-item.dragging {
+  opacity: 0.5;
+  background: #e3f2fd !important;
+}
+
+.template-item.over {
+  border-top: 2px solid #7c4dff;
+  margin-top: 2px;
+}
+
+.template-content {
+  pointer-events: none;
+}
+
+.template-info {
+  margin-bottom: 6px;
+}
+
+.template-preview {
+  display: block;
+  margin-top: 3px;
+  font-style: italic;
+}
+
+.template-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.use-template {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* 复制和保存模板按钮样式 */
+.copy-content, .save-template {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* 复制按钮样式 */
+.chrome-memo-copy {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.chrome-memo-copy:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* 模板管理增强样式 */
+.template-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.small-button {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.template-guide {
+  background-color: #f0f0f0;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 10px;
+  position: relative;
+}
+
+.template-guide:before {
+  content: "💡";
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  font-size: 20px;
+}
+
+.template-guide p,
+.template-guide ul {
+  margin-left: 30px;
+}
+
+/* 添加模板按钮样式 */
+.chrome-memo-template {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.chrome-memo-template:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* 更明显的模板名称样式 */
+.template-name {
+  font-weight: bold;
+  color: #7c4dff;
+  font-size: 14px;
+}
+
+/* 增强模板选择器样式 */
+#template-selector {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background-color: #f8f8ff;
+  color: #333;
+  font-size: 13px;
+}
+
+#template-selector:focus {
+  outline: none;
+  border-color: #7c4dff;
+  box-shadow: 0 0 0 2px rgba(124, 77, 255, 0.2);
+}
+
+/* 为选定的模板添加特殊样式 */
+#template-selector option:checked {
+  background-color: #7c4dff;
+  color: white;
+}
+
+/* 添加模板选择器包装样式 */
+.template-selector-wrapper {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.template-selector-label {
+  font-size: 12px;
+  color: #666;
+  margin-right: 5px;
+}
+
+/* 拖动时的样式 */
+.chrome-memo-dragging {
+  opacity: 0.85;
+  pointer-events: none;
+  will-change: left, top; /* 提示浏览器优化渲染 */
+}
+
+/* 当鼠标悬停在头部上时，添加微妙提示 */
+.chrome-memo-header:hover:before {
+  content: "拖动调整位置";
+  position: absolute;
+  font-size: 11px;
+  left: 16px;
+  bottom: 1px;
+  color: rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+
+/* 恢复位置按钮样式 */
+.chrome-memo-reset-position {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.chrome-memo-reset-position:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* 重置位置时的动画效果 */
+.chrome-memo-container.resetting-position {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 备忘录最小化时的样式 */
+.memo-minimized {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* 悬浮图标样式 */
+.chrome-memo-floating-icon {
+  position: fixed;
+  width: 40px;
+  height: 40px;
+  background-color: #7c4dff;
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-icon-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: white;
+  position: relative;
+}
+
+/* 悬浮提示 */
+.floating-icon-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  left: 50px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* 悬浮效果 */
+.chrome-memo-floating-icon:hover .floating-icon-tooltip {
+  opacity: 1;
+}
+
+/* 点击效果 */
+.chrome-memo-floating-icon:active {
+  transform: scale(0.95);
+}
+
+/* 添加模板选择器相关样式 */
+.template-selector-container {
+  position: relative;
+  margin: 10px 0;
+  display: flex;
+  gap: 10px;
+}
+
+#template-selector {
+  flex: 1;
+  min-height: 100px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: default;
+}
+
+#template-selector option {
+  padding: 8px;
+  margin: 2px 0;
+  border-radius: 4px;
+  cursor: move;
+  background: #f5f5f5;
+  transition: background-color 0.2s;
+}
+
+#template-selector option.over {
+  border-top: 2px solid #7c4dff;
+}
+
+#template-selector option.dragging {
+  opacity: 0.5;
+  background: #e3f2fd !important;
+}
+
+.template-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.delete-template {
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #f44336;
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.delete-template:hover {
+  background: #d32f2f;
+}
+
+/* 选中文本弹出菜单样式 */
+.chrome-memo-selection-popup {
+  position: fixed;
+  z-index: 2147483647;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.add-to-memo-btn {
+  background: #7c4dff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.add-to-memo-btn:before {
+  content: "+";
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.add-to-memo-btn:hover {
+  background: #6a3de8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(124, 77, 255, 0.3);
+}
+
+/* 添加成功提示样式 */
+.chrome-memo-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 2147483647;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.chrome-memo-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.chrome-memo-editable {
+  outline: none;
+  min-height: 200px;
+  line-height: 1.6;
+  color: #444;
+  font-size: 14px;
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  text-align: left;
+} 

@@ -629,21 +629,80 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // 导出数据函数
   function exportData() {
+    console.log("导出按钮被点击");
     chrome.storage.local.get(null, (data) => {
-      // 获取所有的数据
-      const exportData = {
-        memos: data.memos || {},
-        templates: data.templates || {},
-        // 获取所有位置数据
-        positions: {}
-      };
+      console.log("获取到所有存储数据:", data);
       
-      // 找出所有位置数据(position_域名)
+      // 获取集中存储的备忘录数据
+      const memos = data.memos || {};
+      const templates = data.templates || {};
+      
+      // 收集位置数据
+      const positions = {};
+      
+      // 单独存储的旧格式备忘录数据
+      const singleMemos = {};
+      let hasOldFormatMemos = false;
+      
+      // 遍历所有存储项
       for (const key in data) {
+        // 收集位置数据
         if (key.startsWith('position_')) {
-          exportData.positions[key] = data[key];
+          positions[key] = data[key];
+        }
+        
+        // 收集旧格式的备忘录数据
+        if (key.startsWith('memo_')) {
+          const domain = key.replace('memo_', '');
+          singleMemos[domain] = {
+            content: data[key],
+            isVisible: true,
+            lastEdited: data[`lastEdited_${domain}`] || Date.now()
+          };
+          hasOldFormatMemos = true;
+          console.log("发现旧格式备忘录:", domain);
         }
       }
+      
+      // 合并两种格式的备忘录数据
+      const combinedMemos = {...memos};
+      if (hasOldFormatMemos) {
+        Object.assign(combinedMemos, singleMemos);
+      }
+      
+      // 检查是否存在可导出的数据
+      const hasMemos = Object.keys(combinedMemos).length > 0;
+      const hasTemplates = Object.keys(templates).length > 0;
+      const hasPositions = Object.keys(positions).length > 0;
+      
+      console.log("数据检查结果:", {
+        hasMemos: hasMemos,
+        memoCount: Object.keys(combinedMemos).length,
+        hasTemplates: hasTemplates,
+        templateCount: Object.keys(templates).length,
+        hasPositions: hasPositions,
+        positionCount: Object.keys(positions).length
+      });
+      
+      // 如果没有任何数据，显示提示并返回
+      if (!hasMemos && !hasTemplates && !hasPositions) {
+        showToast("没有可导出的数据！请先创建备忘录或模板。", "warning");
+        return;
+      }
+      
+      // 准备导出数据
+      const exportData = {
+        memos: combinedMemos,
+        templates: templates,
+        positions: positions
+      };
+      
+      // 添加导出元数据
+      exportData.meta = {
+        exportDate: new Date().toISOString(),
+        version: "1.3",
+        dataFormat: hasOldFormatMemos ? "mixed" : "standard"
+      };
       
       // 设置文件名，包含日期
       const date = new Date().toISOString().slice(0, 10);
@@ -656,13 +715,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
+      document.body.appendChild(a); // 确保元素添加到DOM
       a.click();
+      document.body.removeChild(a); // 清理DOM
       
       // 清理URL对象
       setTimeout(() => URL.revokeObjectURL(url), 100);
       
       // 显示成功提示
-      showToast("数据导出成功！");
+      showToast(`数据导出成功！共导出${Object.keys(combinedMemos).length}个备忘录。`);
     });
   }
   
@@ -671,68 +732,137 @@ document.addEventListener("DOMContentLoaded", () => {
     const file = event.target.files[0];
     if (!file) return;
     
+    console.log("开始读取文件:", file.name);
     const reader = new FileReader();
+    
     reader.onload = function(e) {
       try {
+        console.log("文件读取成功，开始解析");
         const data = JSON.parse(e.target.result);
         
-        // 验证数据格式是否正确
+        // 扩展数据验证
         if (!data || (typeof data !== 'object')) {
           throw new Error("导入的文件格式不正确");
         }
         
+        // 验证数据是否包含必要的字段
+        if (!data.memos && !data.templates && !data.positions) {
+          throw new Error("导入文件不包含有效的备忘录数据");
+        }
+        
+        console.log("导入数据验证通过:", {
+          memos: data.memos ? Object.keys(data.memos).length : 0, 
+          templates: data.templates ? Object.keys(data.templates).length : 0,
+          positions: data.positions ? Object.keys(data.positions).length : 0
+        });
+        
         // 确认导入
         if (confirm("确定要导入这些数据吗？这将覆盖当前的数据。")) {
+          console.log("用户确认导入，开始保存数据");
+          
+          // 使用Promise处理异步存储操作
+          const savePromises = [];
+          
           // 保存备忘录数据
           if (data.memos) {
-            chrome.storage.local.set({ memos: data.memos });
+            savePromises.push(new Promise((resolve) => {
+              chrome.storage.local.set({ memos: data.memos }, () => {
+                console.log("备忘录数据保存完成");
+                resolve();
+              });
+            }));
           }
           
           // 保存模板数据
           if (data.templates) {
-            chrome.storage.local.set({ templates: data.templates });
+            savePromises.push(new Promise((resolve) => {
+              chrome.storage.local.set({ templates: data.templates }, () => {
+                console.log("模板数据保存完成");
+                resolve();
+              });
+            }));
           }
           
           // 保存位置数据
           if (data.positions) {
-            for (const key in data.positions) {
-              const obj = {};
-              obj[key] = data.positions[key];
-              chrome.storage.local.set(obj);
-            }
+            const positionPromises = Object.keys(data.positions).map(key => {
+              return new Promise((resolve) => {
+                const obj = {};
+                obj[key] = data.positions[key];
+                chrome.storage.local.set(obj, () => {
+                  console.log(`位置数据保存完成: ${key}`);
+                  resolve();
+                });
+              });
+            });
+            savePromises.push(...positionPromises);
           }
           
-          // 显示成功提示
-          showToast("数据导入成功！");
-          
-          // 刷新页面显示
-          setTimeout(() => {
-            loadSavedSites();
-            loadTemplates();
-          }, 500);
+          // 等待所有存储操作完成
+          Promise.all(savePromises).then(() => {
+            console.log("所有数据保存完成");
+            
+            // 验证数据是否正确保存
+            chrome.storage.local.get(null, (result) => {
+              console.log("验证保存结果:", {
+                memos: result.memos ? Object.keys(result.memos).length : 0,
+                templates: result.templates ? Object.keys(result.templates).length : 0
+              });
+              
+              // 显示成功提示
+              showToast("数据导入成功！", "success");
+              
+              // 刷新页面显示
+              loadSavedSites();
+              loadTemplates();
+              
+              // 显示弹窗确认导入成功
+              setTimeout(() => {
+                alert(`数据导入成功!\n- 备忘录: ${result.memos ? Object.keys(result.memos).length : 0}个\n- 模板: ${result.templates ? Object.keys(result.templates).length : 0}个`);
+              }, 800);
+            });
+          }).catch(err => {
+            console.error("保存数据时出错:", err);
+            showToast("导入过程中出错: " + err.message, "error");
+          });
         }
       } catch (error) {
-        alert("导入失败: " + error.message);
+        console.error("导入解析失败:", error);
+        showToast("导入失败: " + error.message, "error");
       }
       
       // 重置文件输入，允许重复选择同一文件
       document.getElementById("fileInput").value = "";
     };
     
+    reader.onerror = function() {
+      console.error("文件读取失败");
+      showToast("文件读取失败", "error");
+    };
+    
     reader.readAsText(file);
   }
   
-  // 显示提示信息
-  function showToast(message) {
+  // 增强版提示信息 - 支持不同类型的提示
+  function showToast(message, type = "success") {
     // 创建提示元素
     const toast = document.createElement('div');
     toast.textContent = message;
+    
+    // 根据类型设置不同样式
+    let backgroundColor = "rgba(0, 0, 0, 0.7)";
+    if (type === "warning") {
+      backgroundColor = "rgba(255, 153, 0, 0.9)";
+    } else if (type === "error") {
+      backgroundColor = "rgba(255, 59, 48, 0.9)";
+    }
+    
     toast.style.cssText = `
       position: fixed;
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.7);
+      background: ${backgroundColor};
       color: white;
       padding: 10px 20px;
       border-radius: 4px;

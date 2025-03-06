@@ -845,6 +845,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 loadSavedSites();
                 loadTemplates();
                 
+                // 通知当前页面更新备忘录
+                chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+                  const currentTab = tabs[0];
+                  const domain = new URL(currentTab.url).hostname;
+                  
+                  // 获取当前域名的备忘录数据
+                  const memoData = result.memos?.[domain] || null;
+                  
+                  // 如果当前页面有备忘录数据，通知页面更新显示
+                  if (memoData) {
+                    chrome.tabs.sendMessage(currentTab.id, {
+                      action: "updateMemo",
+                      data: memoData
+                    });
+                  }
+                });
+                
                 // 显示弹窗确认导入成功
                 showDialog({
                   title: "扩展程序网站备忘录提示",

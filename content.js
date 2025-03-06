@@ -97,6 +97,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       memoContainer.remove();
       memoContainer = null;
     }
+  } else if (message.action === "updateMemo") {
+    // 如果有新的备忘录数据，更新显示
+    if (message.data) {
+      // 如果已经存在备忘录容器，先移除它
+      if (memoContainer) {
+        memoContainer.remove();
+        memoContainer = null;
+      }
+      
+      // 创建新的备忘录元素
+      if (message.data.isVisible) {
+        createMemoElement(message.data.content);
+      }
+    }
   }
 });
 

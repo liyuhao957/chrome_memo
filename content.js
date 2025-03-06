@@ -152,7 +152,7 @@ function createMemoElement(content) {
         <button class="chrome-memo-copy" title="复制备忘录内容">📋</button>
         <button class="chrome-memo-template" title="保存为模板">📑</button>
         <button class="chrome-memo-reset-position" title="恢复默认位置">📍</button>
-        <button class="chrome-memo-edit" title="编辑备忘录">✏️</button>
+        <button class="chrome-memo-shortcuts" title="查看快捷键">⌨️</button>
         <button class="chrome-memo-close" title="关闭备忘录">×</button>
       </div>
     </div>
@@ -648,6 +648,52 @@ function createMemoElement(content) {
 
   // 修改悬停提示内容
   memoContainer.querySelector(".chrome-memo-content").style.setProperty("--hover-text", "'双击编辑'");
+
+  // 添加快捷键提示按钮的事件处理
+  memoContainer.querySelector(".chrome-memo-shortcuts").addEventListener("click", () => {
+    const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+    const shortcuts = {
+      toggle: isMac ? "⌥ M" : "Alt + M",
+      edit: isMac ? "⌥ E" : "Alt + E",
+      quickAdd: isMac ? "⌥ Q" : "Alt + Q"
+    };
+
+    const shortcutDialog = document.createElement('div');
+    shortcutDialog.className = 'chrome-memo-shortcut-dialog';
+    shortcutDialog.innerHTML = `
+      <div class="shortcut-dialog-content">
+        <h3>快捷键指南</h3>
+        <div class="shortcut-item">
+          <span>显示/隐藏备忘录:</span>
+          <kbd>${shortcuts.toggle}</kbd>
+        </div>
+        <div class="shortcut-item">
+          <span>打开编辑器:</span>
+          <kbd>${shortcuts.edit}</kbd>
+        </div>
+        <div class="shortcut-item">
+          <span>开启/关闭选中文本添加:</span>
+          <kbd>${shortcuts.quickAdd}</kbd>
+        </div>
+        <button class="shortcut-close-btn">关闭</button>
+      </div>
+    `;
+
+    document.body.appendChild(shortcutDialog);
+
+    // 添加关闭事件
+    const closeBtn = shortcutDialog.querySelector('.shortcut-close-btn');
+    closeBtn.addEventListener('click', () => {
+      shortcutDialog.remove();
+    });
+
+    // 点击对话框外部关闭
+    shortcutDialog.addEventListener('click', (e) => {
+      if (e.target === shortcutDialog) {
+        shortcutDialog.remove();
+      }
+    });
+  });
 
   console.log("备忘录已成功创建并显示");
 }

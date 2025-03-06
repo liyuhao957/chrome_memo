@@ -720,4 +720,94 @@
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   text-align: left;
+}
+
+/* 添加快捷键对话框样式 */
+.chrome-memo-shortcut-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2147483648;
+}
+
+.shortcut-dialog-content {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 300px;
+}
+
+.shortcut-dialog-content h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.shortcut-item:last-child {
+  border-bottom: none;
+}
+
+.shortcut-item kbd {
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  font-family: monospace;
+  font-size: 14px;
+  color: #666;
+}
+
+.shortcut-close-btn {
+  width: 100%;
+  margin-top: 15px;
+  padding: 8px;
+  background: #7c4dff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shortcut-close-btn:hover {
+  background: #6a3de8;
+  transform: translateY(-1px);
+}
+
+/* 修改快捷键按钮样式 */
+.chrome-memo-shortcuts {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.chrome-memo-shortcuts:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
 } 

@@ -260,32 +260,69 @@ document.addEventListener("DOMContentLoaded", () => {
             onConfirm: () => {
               // 删除备忘录数据
               chrome.storage.local.get(null, (data) => {
+                let hasChanges = false;
+                
                 // 删除主要数据
                 if (data.memos && data.memos[domain]) {
                   delete data.memos[domain];
-                  chrome.storage.local.set({ memos: data.memos });
+                  hasChanges = true;
                 }
-
-                // 删除旧格式数据（如果存在）
+                
+                // 准备要删除的旧格式数据的键
                 const keysToRemove = [
                   `memo_${domain}`,
                   `lastEdited_${domain}`,
                   `position_${domain}`
                 ];
-
-                chrome.storage.local.remove(keysToRemove, () => {
-                  // 通知当前页面关闭备忘录
+                
+                // 创建一个Promise来处理删除操作
+                const deleteOperation = new Promise((resolve) => {
+                  if (hasChanges) {
+                    // 如果有新格式数据被删除，先保存更新后的memos对象
+                    chrome.storage.local.set({ memos: data.memos }, () => {
+                      // 然后删除旧格式数据
+                      chrome.storage.local.remove(keysToRemove, resolve);
+                    });
+                  } else {
+                    // 如果没有新格式数据，直接删除旧格式数据
+                    chrome.storage.local.remove(keysToRemove, resolve);
+                  }
+                });
+                
+                // 处理删除操作完成后的逻辑
+                deleteOperation.then(() => {
+                  console.log("删除操作完成");
+                  
+                  // 获取当前标签页信息
                   chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
                     const currentTab = tabs[0];
+                    const currentDomain = new URL(currentTab.url).hostname;
+                    
+                    // 通知当前页面关闭备忘录
                     chrome.tabs.sendMessage(currentTab.id, {
                       action: "closeMemo"
                     });
+                    
+                    // 重新获取存储数据以更新状态
+                    chrome.storage.local.get(null, (result) => {
+                      // 更新状态显示
+                      const statusElem = document.getElementById("status");
+                      const hasMemoInNewFormat = result.memos && result.memos[currentDomain];
+                      const hasMemoInOldFormat = result[`memo_${currentDomain}`] !== undefined;
+                      
+                      if (hasMemoInNewFormat || hasMemoInOldFormat) {
+                        statusElem.textContent = `当前网站 (${currentDomain}) 已有备忘录`;
+                      } else {
+                        statusElem.textContent = `当前网站 (${currentDomain}) 没有备忘录`;
+                      }
+                      
+                      // 刷新列表显示
+                      loadSavedSites();
+                      
+                      // 显示成功提示
+                      showToast("备忘录已成功删除", "success");
+                    });
                   });
-
-                  // 刷新列表
-                  loadSavedSites();
-                  // 显示成功提示
-                  showToast("备忘录已成功删除", "success");
                 });
               });
             }
@@ -485,7 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
   
-  // 导出数据函数
+  // 修改导出数据函数
   function exportData() {
     console.log("导出按钮被点击");
     chrome.storage.local.get(null, (data) => {
@@ -493,7 +530,6 @@ document.addEventListener("DOMContentLoaded", () => {
       
       // 获取集中存储的备忘录数据
       const memos = data.memos || {};
-      const templates = data.templates || {};
       
       // 收集位置数据
       const positions = {};
@@ -530,36 +566,23 @@ document.addEventListener("DOMContentLoaded", () => {
       
       // 检查是否存在可导出的数据
       const hasMemos = Object.keys(combinedMemos).length > 0;
-      const hasTemplates = Object.keys(templates).length > 0;
       const hasPositions = Object.keys(positions).length > 0;
       
-      console.log("数据检查结果:", {
-        hasMemos: hasMemos,
-        memoCount: Object.keys(combinedMemos).length,
-        hasTemplates: hasTemplates,
-        templateCount: Object.keys(templates).length,
-        hasPositions: hasPositions,
-        positionCount: Object.keys(positions).length
-      });
-      
       // 如果没有任何数据，显示提示并返回
-      if (!hasMemos && !hasTemplates && !hasPositions) {
-        showToast("没有可导出的数据！请先创建备忘录或模板。", "warning");
+      if (!hasMemos && !hasPositions) {
+        showToast("没有可导出的数据！请先创建备忘录。", "warning");
         return;
       }
       
       // 准备导出数据
       const exportData = {
         memos: combinedMemos,
-        templates: templates,
-        positions: positions
-      };
-      
-      // 添加导出元数据
-      exportData.meta = {
-        exportDate: new Date().toISOString(),
-        version: "1.3",
-        dataFormat: hasOldFormatMemos ? "mixed" : "standard"
+        positions: positions,
+        meta: {
+          exportDate: new Date().toISOString(),
+          version: "1.3",
+          dataFormat: hasOldFormatMemos ? "mixed" : "standard"
+        }
       };
       
       // 设置文件名，包含日期
@@ -573,9 +596,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
-      document.body.appendChild(a); // 确保元素添加到DOM
+      document.body.appendChild(a);
       a.click();
-      document.body.removeChild(a); // 清理DOM
+      document.body.removeChild(a);
       
       // 清理URL对象
       setTimeout(() => URL.revokeObjectURL(url), 100);
@@ -585,7 +608,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   
-  // 导入数据函数
+  // 修改导入数据函数
   function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -604,13 +627,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         // 验证数据是否包含必要的字段
-        if (!data.memos && !data.templates && !data.positions) {
+        if (!data.memos && !data.positions) {
           throw new Error("导入文件不包含有效的备忘录数据");
         }
         
         console.log("导入数据验证通过:", {
-          memos: data.memos ? Object.keys(data.memos).length : 0, 
-          templates: data.templates ? Object.keys(data.templates).length : 0,
+          memos: data.memos ? Object.keys(data.memos).length : 0,
           positions: data.positions ? Object.keys(data.positions).length : 0
         });
         
@@ -635,16 +657,6 @@ document.addEventListener("DOMContentLoaded", () => {
               }));
             }
             
-            // 保存模板数据
-            if (data.templates) {
-              savePromises.push(new Promise((resolve) => {
-                chrome.storage.local.set({ templates: data.templates }, () => {
-                  console.log("模板数据保存完成");
-                  resolve();
-                });
-              }));
-            }
-            
             // 保存位置数据
             if (data.positions) {
               const positionPromises = Object.keys(data.positions).map(key => {
@@ -664,27 +676,25 @@ document.addEventListener("DOMContentLoaded", () => {
             Promise.all(savePromises).then(() => {
               console.log("所有数据保存完成");
               
-              // 验证数据是否正确保存
+              // 验证数据是否正确保存并更新当前状态
               chrome.storage.local.get(null, (result) => {
-                console.log("验证保存结果:", {
-                  memos: result.memos ? Object.keys(result.memos).length : 0,
-                  templates: result.templates ? Object.keys(result.templates).length : 0
-                });
+                console.log("验证保存结果:", result);
                 
-                // 显示成功提示
-                showToast("数据导入成功！", "success");
-                
-                // 刷新页面显示
-                loadSavedSites();
-                loadTemplates();
-                
-                // 通知当前页面更新备忘录
+                // 获取当前标签页信息并更新状态
                 chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
                   const currentTab = tabs[0];
                   const domain = new URL(currentTab.url).hostname;
                   
                   // 获取当前域名的备忘录数据
-                  const memoData = result.memos?.[domain] || null;
+                  const memoData = result.memos?.[domain];
+                  
+                  // 更新状态显示
+                  const statusElem = document.getElementById("status");
+                  if (memoData) {
+                    statusElem.textContent = `当前网站 (${domain}) 已有备忘录`;
+                  } else {
+                    statusElem.textContent = `当前网站 (${domain}) 没有备忘录`;
+                  }
                   
                   // 如果当前页面有备忘录数据，通知页面更新显示
                   if (memoData) {
@@ -693,17 +703,22 @@ document.addEventListener("DOMContentLoaded", () => {
                       data: memoData
                     });
                   }
-                });
-                
-                // 显示弹窗确认导入成功
-                showDialog({
-                  title: "扩展程序网站备忘录提示",
-                  message: "数据导入成功！",
-                  type: "success",
-                  data: {
-                    "备忘录": `${result.memos ? Object.keys(result.memos).length : 0}个`,
-                    "模板": `${result.templates ? Object.keys(result.templates).length : 0}个`
-                  }
+                  
+                  // 刷新页面显示
+                  loadSavedSites();
+                  
+                  // 显示成功提示
+                  showToast("数据导入成功！", "success");
+                  
+                  // 显示弹窗确认导入成功
+                  showDialog({
+                    title: "扩展程序网站备忘录提示",
+                    message: "数据导入成功！",
+                    type: "success",
+                    data: {
+                      "备忘录": `${result.memos ? Object.keys(result.memos).length : 0}个`
+                    }
+                  });
                 });
               });
             }).catch(err => {

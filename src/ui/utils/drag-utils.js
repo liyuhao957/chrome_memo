@@ -14,24 +14,30 @@ class DragUtils {
   makeDraggable(element, handle = element, onDragEnd = null) {
     if (!element || !handle) return { cleanup: () => {} };
     
+    // 检查是否是Shadow DOM中的元素
+    const isShadowElement = handle.getRootNode() instanceof ShadowRoot;
+    
     // 存储拖拽相关状态
     let isDragging = false;
-    let currentX;
-    let currentY;
-    let initialX;
-    let initialY;
-    let xOffset = 0;
-    let yOffset = 0;
+    let startX, startY;
+    let elementX, elementY;
     
-    // 边界限制，确保元素不会被拖出视口
-    const checkBoundaries = (x, y) => {
+    // 获取元素当前位置
+    const getElementPosition = () => {
       const rect = element.getBoundingClientRect();
+      return { x: rect.left, y: rect.top };
+    };
+    
+    // 设置元素位置
+    const setPosition = (x, y) => {
+      // 应用边界限制
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
+      const rect = element.getBoundingClientRect();
       
-      // 确保至少20px位于视口内
-      const minVisibleWidth = Math.min(rect.width, 20);
-      const minVisibleHeight = Math.min(rect.height, 20);
+      // 确保至少20%的元素位于视口内
+      const minVisibleWidth = Math.max(rect.width * 0.2, 50);
+      const minVisibleHeight = Math.max(rect.height * 0.2, 50);
       
       // 限制x坐标
       if (x < -rect.width + minVisibleWidth) {
@@ -41,31 +47,43 @@ class DragUtils {
       }
       
       // 限制y坐标
-      if (y < 0) {
-        y = 0;
+      if (y < -rect.height + minVisibleHeight) {
+        y = -rect.height + minVisibleHeight;
       } else if (y > viewportHeight - minVisibleHeight) {
         y = viewportHeight - minVisibleHeight;
+      }
+      
+      // 设置位置
+      element.style.position = 'fixed';
+      element.style.left = x + 'px';
+      element.style.top = y + 'px';
+      element.style.right = '';
+      element.style.bottom = '';
+      
+      // 恢复可能被覆盖的重要样式
+      if (element.hasAttribute('data-chrome-memo')) {
+        // 确保元素可见
+        element.style.display = element.id.includes('floating') ? 'block' : 'block';
       }
       
       return { x, y };
     };
     
-    // 设置元素位置
-    const setTranslate = (x, y) => {
-      const { x: boundedX, y: boundedY } = checkBoundaries(x, y);
+    // 设置为默认位置（右下角）
+    const setDefaultPosition = () => {
+      // 使用CSS类定义的默认位置
+      element.style.position = 'fixed';
+      element.style.left = '';
+      element.style.top = '';
+      element.style.right = '20px';
+      element.style.bottom = '20px';
       
-      // 使用绝对定位方式设置元素位置
-      element.style.position = 'absolute';
-      element.style.transform = `translate(${boundedX}px, ${boundedY}px)`;
-      
-      // 更新当前位置
-      xOffset = boundedX;
-      yOffset = boundedY;
+      return null;
     };
     
     // 开始拖拽
     const handleMouseDown = (e) => {
-      // 如果点击在可编辑元素上，不启动拖拽
+      // 如果点击在可编辑元素或按钮上，不启动拖拽
       if (e.target.isContentEditable || 
           e.target.tagName === 'INPUT' || 
           e.target.tagName === 'TEXTAREA' || 
@@ -74,26 +92,23 @@ class DragUtils {
         return;
       }
       
-      // 确保使用绝对定位，清除CSS定位
-      element.style.position = 'absolute';
-      element.style.bottom = '';
-      element.style.right = '';
+      // 阻止事件冒泡和默认行为
+      e.preventDefault();
+      e.stopPropagation();
       
       // 获取当前位置
-      const rect = element.getBoundingClientRect();
+      const position = getElementPosition();
+      elementX = position.x;
+      elementY = position.y;
       
-      // 如果之前没有设置过transform，初始化偏移量
-      if (!element.style.transform || element.style.transform === 'none') {
-        xOffset = rect.left;
-        yOffset = rect.top;
-      }
+      // 记录鼠标起始位置
+      startX = e.clientX;
+      startY = e.clientY;
       
-      initialX = e.clientX - xOffset;
-      initialY = e.clientY - yOffset;
-      
+      // 标记为拖动状态
       isDragging = true;
-      element.classList.add('dragging');
       
+      // 添加事件监听
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     };
@@ -102,34 +117,51 @@ class DragUtils {
     const handleMouseMove = (e) => {
       if (!isDragging) return;
       
+      // 阻止事件冒泡和默认行为
       e.preventDefault();
+      e.stopPropagation();
       
-      currentX = e.clientX - initialX;
-      currentY = e.clientY - initialY;
+      // 计算新位置
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      const newX = elementX + deltaX;
+      const newY = elementY + deltaY;
       
-      setTranslate(currentX, currentY);
+      // 设置新位置
+      setPosition(newX, newY);
     };
     
     // 结束拖拽
-    const handleMouseUp = () => {
+    const handleMouseUp = (e) => {
       if (!isDragging) return;
       
+      // 阻止事件冒泡和默认行为
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      // 标记为非拖动状态
       isDragging = false;
-      element.classList.remove('dragging');
+      
+      // 获取最终位置
+      const rect = element.getBoundingClientRect();
+      const finalPosition = { x: rect.left, y: rect.top };
+      
+      // 移除事件监听
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
       
       // 调用拖拽结束回调
       if (onDragEnd && typeof onDragEnd === 'function') {
-        onDragEnd({ x: xOffset, y: yOffset });
+        onDragEnd(finalPosition);
       }
-      
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
     };
     
     // 添加拖拽事件监听
     handle.addEventListener('mousedown', handleMouseDown);
     
-    // 返回清理函数
+    // 返回清理函数和位置设置函数
     return {
       cleanup: () => {
         handle.removeEventListener('mousedown', handleMouseDown);
@@ -138,26 +170,9 @@ class DragUtils {
       },
       setPosition: (position) => {
         if (position && typeof position.x === 'number' && typeof position.y === 'number') {
-          // 清除CSS定位样式
-          element.style.bottom = '';
-          element.style.right = '';
-          element.style.position = 'absolute';
-          
-          xOffset = position.x;
-          yOffset = position.y;
-          setTranslate(position.x, position.y);
-        } else if (position === null) {
-          // 如果位置为null，使用CSS定位（右下角）
-          element.style.transform = '';
-          element.style.position = 'fixed';
-          element.style.top = '';
-          element.style.left = '';
-          element.style.bottom = '20px';
-          element.style.right = '20px';
-          
-          // 重置偏移量
-          xOffset = 0;
-          yOffset = 0;
+          return setPosition(position.x, position.y);
+        } else {
+          return setDefaultPosition();
         }
       }
     };

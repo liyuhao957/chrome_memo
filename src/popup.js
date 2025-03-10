@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // 在发生错误时启用基本功能
   function enableBasicFunctions() {
-    toggleMemoBtn.textContent = '创建备忘录';
+    toggleMemoBtn.textContent = '显示/隐藏备忘录';
     toggleMemoBtn.disabled = false;
     toggleSelectionBtn.textContent = '开启选中文本添加';
     toggleSelectionBtn.disabled = false;
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         
         // 更新按钮文本
-        toggleMemoBtn.textContent = memo.isVisible ? '隐藏备忘录' : '显示备忘录';
+        toggleMemoBtn.textContent = '显示/隐藏备忘录';
       } else {
         // 未找到备忘录
         statusElement.innerHTML = `
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
         
         // 更新按钮文本
-        toggleMemoBtn.textContent = '创建备忘录';
+        toggleMemoBtn.textContent = '显示/隐藏备忘录';
       }
     } catch (error) {
       console.error('检查当前网站备忘录失败:', error);

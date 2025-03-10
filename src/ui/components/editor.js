@@ -38,6 +38,11 @@ class EditorComponent {
     this.container.className = 'chrome-memo-editor-container';
     this.container.style.display = 'none'; // 确保初始状态为隐藏
     
+    // 确保初始位置正确
+    this.container.style.top = '50%';
+    this.container.style.left = '50%';
+    this.container.style.transform = 'translate(-50%, -50%)';
+    
     // 创建编辑器头部
     const header = document.createElement('div');
     header.className = 'chrome-memo-editor-header';
@@ -185,6 +190,12 @@ class EditorComponent {
       this.createEditorUI();
     }
     
+    // 先设置内容但保持隐藏状态
+    this.editor.innerHTML = content;
+    
+    // 先隐藏编辑器，以便重置样式
+    this.container.style.display = 'none';
+    
     // 移除已拖拽标记，返回到默认居中状态
     this.container.classList.remove('has-been-dragged');
     
@@ -193,10 +204,12 @@ class EditorComponent {
     this.container.style.top = '50%';
     this.container.style.left = '50%';
     
-    this.editor.innerHTML = content;
-    this.container.style.display = 'flex';
-    this.isOpen = true;
-    this.editor.focus();
+    // 使用requestAnimationFrame确保在下一帧渲染前显示编辑器
+    requestAnimationFrame(() => {
+      this.container.style.display = 'flex';
+      this.isOpen = true;
+      this.editor.focus();
+    });
   }
   
   /**

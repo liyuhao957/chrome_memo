@@ -3,8 +3,6 @@
  * 处理扩展弹出窗口的操作逻辑
  */
 
-import { storageManager } from './data/storage.js';
-
 document.addEventListener('DOMContentLoaded', async function() {
   const statusElement = document.getElementById('status');
   const toggleMemoBtn = document.getElementById('toggleMemoBtn');
@@ -76,8 +74,17 @@ document.addEventListener('DOMContentLoaded', async function() {
       const url = new URL(currentTab.url);
       const domain = url.hostname;
       
-      // 直接从存储中读取
-      return await storageManager.getMemo(domain);
+      // 直接从Chrome存储中读取
+      return new Promise((resolve, reject) => {
+        chrome.storage.sync.get('memos', (result) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            const memos = result.memos || {};
+            resolve(memos[domain] || null);
+          }
+        });
+      });
     } catch (error) {
       console.error('从存储获取状态失败:', error);
       return null;
@@ -159,7 +166,24 @@ document.addEventListener('DOMContentLoaded', async function() {
   async function loadSavedSites() {
     try {
       // 获取所有备忘录
-      const allMemos = await storageManager.getAllMemos();
+      let allMemos = {};
+      
+      // 如果全局变量可用，使用它
+      if (window.storageManager) {
+        allMemos = await window.storageManager.getAllMemos();
+      } else {
+        // 否则直接从Chrome存储中读取
+        allMemos = await new Promise((resolve, reject) => {
+          chrome.storage.sync.get('memos', (result) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(result.memos || {});
+            }
+          });
+        });
+      }
+      
       const sites = Object.keys(allMemos).map(domain => ({
         domain,
         content: allMemos[domain].content,
@@ -265,7 +289,56 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 删除站点备忘录
   async function deleteSite(domain) {
     try {
-      await storageManager.deleteMemo(domain);
+      // 尝试多种删除方式
+      let success = false;
+      
+      // 如果全局变量可用，使用它
+      if (window.storageManager) {
+        await window.storageManager.deleteMemo(domain);
+        success = true;
+      } else {
+        // 通过消息请求删除
+        try {
+          const response = await chrome.runtime.sendMessage({
+            action: 'deleteMemo',
+            domain: domain
+          });
+          
+          if (response && response.success) {
+            success = true;
+          }
+        } catch (error) {
+          console.error('通过消息删除失败:', error);
+        }
+        
+        // 如果消息方式失败，尝试直接删除
+        if (!success) {
+          await new Promise((resolve, reject) => {
+            chrome.storage.sync.get('memos', (result) => {
+              if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+                return;
+              }
+              
+              const memos = result.memos || {};
+              if (!memos[domain]) {
+                resolve(false);
+                return;
+              }
+              
+              delete memos[domain];
+              chrome.storage.sync.set({ memos }, () => {
+                if (chrome.runtime.lastError) {
+                  reject(chrome.runtime.lastError);
+                } else {
+                  resolve(true);
+                }
+              });
+            });
+          });
+          success = true;
+        }
+      }
       
       // 如果是当前站点，更新状态
       if (currentTab && new URL(currentTab.url).hostname === domain) {
@@ -377,10 +450,43 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 导出数据
   async function exportData() {
     try {
-      const data = await storageManager.exportData();
+      let exportedData;
+      
+      // 如果全局变量可用，使用它
+      if (window.storageManager) {
+        exportedData = await window.storageManager.exportData();
+      } else {
+        // 否则直接从Chrome存储中导出
+        const memos = await new Promise((resolve, reject) => {
+          chrome.storage.sync.get('memos', (result) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(result.memos || {});
+            }
+          });
+        });
+        
+        const templates = await new Promise((resolve, reject) => {
+          chrome.storage.sync.get('templates', (result) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(result.templates || {});
+            }
+          });
+        });
+        
+        exportedData = {
+          memos,
+          templates,
+          exportedAt: new Date().toISOString(),
+          version: '1.0.0'
+        };
+      }
       
       // 创建数据URL
-      const dataStr = JSON.stringify(data, null, 2);
+      const dataStr = JSON.stringify(exportedData, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
       const dataUrl = URL.createObjectURL(dataBlob);
       
@@ -421,7 +527,37 @@ document.addEventListener('DOMContentLoaded', async function() {
           
           // 确认导入
           if (confirm('导入将覆盖当前所有备忘录和模板数据，确定要继续吗？')) {
-            await storageManager.importData(data);
+            // 尝试多种导入方式
+            let success = false;
+            
+            // 如果全局变量可用，使用它
+            if (window.storageManager) {
+              await window.storageManager.importData(data);
+              success = true;
+            } else {
+              // 否则直接使用Chrome存储API
+              await new Promise((resolve, reject) => {
+                chrome.storage.sync.set({ memos: data.memos }, () => {
+                  if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                  } else {
+                    resolve();
+                  }
+                });
+              });
+              
+              await new Promise((resolve, reject) => {
+                chrome.storage.sync.set({ templates: data.templates }, () => {
+                  if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                  } else {
+                    resolve();
+                  }
+                });
+              });
+              
+              success = true;
+            }
             
             // 更新状态和列表
             await checkCurrentSiteMemo();

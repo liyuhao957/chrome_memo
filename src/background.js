@@ -3,24 +3,85 @@
  * 处理扩展的后台逻辑和与内容脚本的通信
  */
 
-// 动态确定如何访问storageManager
-let storageManager;
+// 直接使用Chrome存储API
+// 获取备忘录数据
+async function getMemo(domain) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.storage.sync.get('memos', (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+          return;
+        }
+        
+        const memos = result.memos || {};
+        resolve(memos[domain] || null);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
-// 首先尝试直接从全局变量获取
-if (typeof window !== 'undefined' && window.storageManager) {
-  storageManager = window.storageManager;
-} else {
-  // 否则尝试导入模块
-  try {
-    import('./data/storage.js').then(module => {
-      storageManager = module.storageManager;
-      console.log('StorageManager模块已成功导入');
-    }).catch(err => {
-      console.error('导入StorageManager模块失败:', err);
-    });
-  } catch (error) {
-    console.error('无法导入StorageManager:', error);
-  }
+// 保存备忘录数据
+async function saveMemo(domain, data) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.storage.sync.get('memos', (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+          return;
+        }
+        
+        const memos = result.memos || {};
+        memos[domain] = {
+          ...data,
+          updatedAt: new Date().toISOString()
+        };
+        
+        chrome.storage.sync.set({ memos }, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(memos[domain]);
+          }
+        });
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// 删除备忘录数据
+async function deleteMemo(domain) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.storage.sync.get('memos', (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+          return;
+        }
+        
+        const memos = result.memos || {};
+        if (!memos[domain]) {
+          resolve(false);
+          return;
+        }
+        
+        delete memos[domain];
+        chrome.storage.sync.set({ memos }, () => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(true);
+          }
+        });
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 // 扩展安装或更新时的处理
@@ -79,19 +140,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
     }
 
-    // 确保storageManager已初始化
-    if (!storageManager) {
-      console.error('StorageManager未初始化');
-      sendResponse({ 
-        success: false, 
-        error: 'StorageManager未初始化'
-      });
-      return true;
-    }
-    
     // 查询存储中的备忘录
     try {
-      storageManager.getMemo(domain)
+      getMemo(domain)
         .then(memo => {
           sendResponse({ success: true, memo });
         })
@@ -116,19 +167,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
     }
 
-    // 确保storageManager已初始化
-    if (!storageManager) {
-      console.error('StorageManager未初始化');
-      sendResponse({ 
-        success: false, 
-        error: 'StorageManager未初始化'
-      });
-      return true;
-    }
-    
     // 保存备忘录
     try {
-      storageManager.saveMemo(domain, data)
+      saveMemo(domain, data)
         .then(savedData => {
           sendResponse({ success: true, data: savedData });
         })
@@ -153,19 +194,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
     }
 
-    // 确保storageManager已初始化
-    if (!storageManager) {
-      console.error('StorageManager未初始化');
-      sendResponse({ 
-        success: false, 
-        error: 'StorageManager未初始化'
-      });
-      return true;
-    }
-    
     // 删除备忘录
     try {
-      storageManager.deleteMemo(domain)
+      deleteMemo(domain)
         .then(result => {
           sendResponse({ success: result });
         })

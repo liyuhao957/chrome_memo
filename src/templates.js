@@ -3,8 +3,6 @@
  * 处理模板管理页面的操作逻辑
  */
 
-import { templateManager } from './core/template-manager.js';
-
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.body;
   const templateListComponent = window.templateListComponent;

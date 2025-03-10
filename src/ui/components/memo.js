@@ -425,16 +425,37 @@ class MemoComponent {
       // 如果尺寸为0，可能是样式问题，尝试重置位置
       this.resetPosition();
     } else {
-      // 计算可见部分的比例
-      const visibleWidth = Math.min(rect.right, viewportWidth) - Math.max(rect.left, 0);
-      const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
-      const visibleWidthRatio = visibleWidth / rect.width;
-      const visibleHeightRatio = visibleHeight / rect.height;
+      // 检查备忘录是否完全在视口内
+      let needsRepositioning = false;
       
-      // 只有在备忘录几乎完全不可见时才重置位置
-      if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= viewportWidth || rect.top >= viewportHeight ||
-          (visibleWidthRatio < 0.1 && visibleHeightRatio < 0.1)) {
+      // 检查是否有部分在视口外
+      if (rect.left < 0 || rect.top < 0 || rect.right > viewportWidth || rect.bottom > viewportHeight) {
+        needsRepositioning = true;
+      }
+      
+      // 如果备忘录完全不在视口内，重置到右下角
+      if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= viewportWidth || rect.top >= viewportHeight) {
         this.resetPosition();
+      } else if (needsRepositioning) {
+        // 调整位置使其完全在视口内
+        let newX = rect.left;
+        let newY = rect.top;
+        
+        // 调整水平位置
+        if (rect.left < 0) {
+          newX = 0;
+        } else if (rect.right > viewportWidth) {
+          newX = viewportWidth - rect.width;
+        }
+        
+        // 调整垂直位置
+        if (rect.top < 0) {
+          newY = 0;
+        } else if (rect.bottom > viewportHeight) {
+          newY = viewportHeight - rect.height;
+        }
+        
+        this.dragHelper.setPosition({ x: newX, y: newY });
       }
     }
     
@@ -496,16 +517,37 @@ class MemoComponent {
       // 如果尺寸为0，可能是样式问题，尝试重置位置
       this.resetPosition();
     } else {
-      // 计算可见部分的比例
-      const visibleWidth = Math.min(rect.right, viewportWidth) - Math.max(rect.left, 0);
-      const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
-      const visibleWidthRatio = visibleWidth / rect.width;
-      const visibleHeightRatio = visibleHeight / rect.height;
+      // 检查备忘录是否完全在视口内
+      let needsRepositioning = false;
       
-      // 只有在备忘录几乎完全不可见时才重置位置
-      if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= viewportWidth || rect.top >= viewportHeight ||
-          (visibleWidthRatio < 0.1 && visibleHeightRatio < 0.1)) {
+      // 检查是否有部分在视口外
+      if (rect.left < 0 || rect.top < 0 || rect.right > viewportWidth || rect.bottom > viewportHeight) {
+        needsRepositioning = true;
+      }
+      
+      // 如果备忘录完全不在视口内，重置到右下角
+      if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= viewportWidth || rect.top >= viewportHeight) {
         this.resetPosition();
+      } else if (needsRepositioning) {
+        // 调整位置使其完全在视口内
+        let newX = rect.left;
+        let newY = rect.top;
+        
+        // 调整水平位置
+        if (rect.left < 0) {
+          newX = 0;
+        } else if (rect.right > viewportWidth) {
+          newX = viewportWidth - rect.width;
+        }
+        
+        // 调整垂直位置
+        if (rect.top < 0) {
+          newY = 0;
+        } else if (rect.bottom > viewportHeight) {
+          newY = viewportHeight - rect.height;
+        }
+        
+        this.dragHelper.setPosition({ x: newX, y: newY });
       }
     }
   }
@@ -569,16 +611,38 @@ class MemoComponent {
         return;
       }
       
-      // 计算可见部分的比例
-      const visibleWidth = Math.min(rect.right, viewportWidth) - Math.max(rect.left, 0);
-      const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
-      const visibleWidthRatio = visibleWidth / rect.width;
-      const visibleHeightRatio = visibleHeight / rect.height;
+      // 检查备忘录是否完全在视口内
+      let needsRepositioning = false;
+      let newX = rect.left;
+      let newY = rect.top;
       
-      // 只有在备忘录几乎完全不可见时才重置位置
-      if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= viewportWidth || rect.top >= viewportHeight ||
-          (visibleWidthRatio < 0.1 && visibleHeightRatio < 0.1)) {
-        this.resetPosition();
+      // 检查水平方向
+      if (rect.left < 0) {
+        newX = 0;
+        needsRepositioning = true;
+      } else if (rect.right > viewportWidth) {
+        newX = viewportWidth - rect.width;
+        needsRepositioning = true;
+      }
+      
+      // 检查垂直方向
+      if (rect.top < 0) {
+        newY = 0;
+        needsRepositioning = true;
+      } else if (rect.bottom > viewportHeight) {
+        newY = viewportHeight - rect.height;
+        needsRepositioning = true;
+      }
+      
+      // 如果需要重新定位
+      if (needsRepositioning) {
+        // 如果备忘录完全不在视口内，重置到右下角
+        if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= viewportWidth || rect.top >= viewportHeight) {
+          this.resetPosition();
+        } else {
+          // 否则调整位置使其完全在视口内
+          this.dragHelper.setPosition({ x: newX, y: newY });
+        }
       }
     };
     

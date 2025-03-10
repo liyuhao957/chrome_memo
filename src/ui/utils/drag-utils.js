@@ -35,22 +35,19 @@ class DragUtils {
       const viewportHeight = window.innerHeight;
       const rect = element.getBoundingClientRect();
       
-      // 确保至少20%的元素位于视口内
-      const minVisibleWidth = Math.max(rect.width * 0.2, 50);
-      const minVisibleHeight = Math.max(rect.height * 0.2, 50);
-      
-      // 限制x坐标
-      if (x < -rect.width + minVisibleWidth) {
-        x = -rect.width + minVisibleWidth;
-      } else if (x > viewportWidth - minVisibleWidth) {
-        x = viewportWidth - minVisibleWidth;
+      // 确保元素完全在视口内，不能被拖出页面
+      // 限制x坐标，确保元素完全在视口内
+      if (x < 0) {
+        x = 0; // 左边界
+      } else if (x + rect.width > viewportWidth) {
+        x = viewportWidth - rect.width; // 右边界
       }
       
-      // 限制y坐标
-      if (y < -rect.height + minVisibleHeight) {
-        y = -rect.height + minVisibleHeight;
-      } else if (y > viewportHeight - minVisibleHeight) {
-        y = viewportHeight - minVisibleHeight;
+      // 限制y坐标，确保元素完全在视口内
+      if (y < 0) {
+        y = 0; // 上边界
+      } else if (y + rect.height > viewportHeight) {
+        y = viewportHeight - rect.height; // 下边界
       }
       
       // 设置位置
@@ -71,12 +68,21 @@ class DragUtils {
     
     // 设置为默认位置（右下角）
     const setDefaultPosition = () => {
+      // 获取元素尺寸
+      const rect = element.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // 计算右下角位置，确保完全在视口内
+      const rightPosition = Math.min(20, viewportWidth - rect.width);
+      const bottomPosition = Math.min(20, viewportHeight - rect.height);
+      
       // 使用CSS类定义的默认位置
       element.style.position = 'fixed';
       element.style.left = '';
       element.style.top = '';
-      element.style.right = '20px';
-      element.style.bottom = '20px';
+      element.style.right = rightPosition + 'px';
+      element.style.bottom = bottomPosition + 'px';
       
       return null;
     };

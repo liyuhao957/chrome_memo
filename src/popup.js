@@ -6,7 +6,6 @@
 document.addEventListener('DOMContentLoaded', async function() {
   const statusElement = document.getElementById('status');
   const toggleMemoBtn = document.getElementById('toggleMemoBtn');
-  const openEditorBtn = document.getElementById('openEditorBtn');
   const createOrEditBtn = document.getElementById('createOrEditBtn');
   const toggleSelectionBtn = document.getElementById('toggleSelectionBtn');
   const siteList = document.getElementById('siteList');
@@ -66,7 +65,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   function enableBasicFunctions() {
     toggleMemoBtn.textContent = '创建备忘录';
     toggleMemoBtn.disabled = false;
-    openEditorBtn.disabled = false;
     toggleSelectionBtn.textContent = '开启选中文本添加';
     toggleSelectionBtn.disabled = false;
   }
@@ -408,26 +406,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }
   
-  // 打开编辑器
-  async function openEditor() {
-    try {
-      if (!currentTab) {
-        showToast('无法获取当前标签页信息', 'error');
-        return;
-      }
-      
-      await chrome.tabs.sendMessage(currentTab.id, {
-        action: 'openEditor'
-      });
-      
-      // 关闭弹出窗口
-      window.close();
-    } catch (error) {
-      console.error('打开编辑器失败:', error);
-      showToast('打开编辑器失败，请刷新页面后重试', 'error');
-    }
-  }
-  
   // 切换选中文本添加功能
   async function toggleSelectionFeature() {
     isSelectionEnabled = !isSelectionEnabled;
@@ -672,12 +650,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 初始化事件监听
   function setupEventListeners() {
     toggleMemoBtn.addEventListener('click', toggleMemo);
-    openEditorBtn.addEventListener('click', openEditor);
     createOrEditBtn.addEventListener('click', createOrEditMemo);
     toggleSelectionBtn.addEventListener('click', toggleSelectionFeature);
     exportDataBtn.addEventListener('click', exportData);
     importDataBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', importData);
+    fileInput.addEventListener('change', handleFileSelect);
   }
   
   // 创建或编辑备忘录（一键操作）

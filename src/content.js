@@ -69,14 +69,19 @@ async function initializeMemo() {
           return;
         }
         
+        // 重新加载当前备忘录内容
+        const memoData = await window.memoManager.loadCurrentMemo();
+        
+        if (memoData && memoData.content) {
+          // 确保备忘录内容更新
+          await window.memoComponent.updateContent(memoData.content);
+          console.log('备忘录内容已更新为最新内容');
+        }
+        
         // 确保备忘录显示
         if (!window.memoComponent.isVisible) {
           console.log('备忘录当前不可见，显示备忘录');
           await window.memoComponent.show();
-        } else {
-          console.log('备忘录已显示，更新内容');
-          // 重新初始化备忘录以更新内容
-          await window.memoComponent.initialize(openEditor);
         }
         
         console.log('选中文本已成功添加到备忘录');

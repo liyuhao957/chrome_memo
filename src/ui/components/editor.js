@@ -39,6 +39,7 @@ class EditorComponent {
     // 创建遮罩层
     this.editorOverlay = document.createElement('div');
     this.editorOverlay.className = 'chrome-memo-editor-overlay';
+    this.editorOverlay.style.display = 'none';
     
     // 创建编辑器容器
     this.editorContainer = document.createElement('div');
@@ -234,19 +235,13 @@ class EditorComponent {
     // 创建新的拖拽实例
     this.dragHelper = window.dragUtils.makeDraggable(
       this.editorContainer,
-      handle
+      handle,
+      // 拖拽结束回调
+      () => {
+        // 标记编辑器已被拖拽，使用绝对定位
+        this.editorContainer.classList.add('has-been-dragged');
+      }
     );
-    
-    // 设置初始位置为居中
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const editorWidth = 600; // 估计宽度
-    const editorHeight = 400; // 估计高度
-    
-    const initialX = (viewportWidth - editorWidth) / 2;
-    const initialY = (viewportHeight - editorHeight) / 4;
-    
-    this.dragHelper.setPosition({ x: initialX, y: initialY });
   }
   
   /**
@@ -257,6 +252,14 @@ class EditorComponent {
     if (!this.editorOverlay) {
       this.createEditorUI();
     }
+    
+    // 移除已拖拽标记，返回到默认居中状态
+    this.editorContainer.classList.remove('has-been-dragged');
+    
+    // 如果之前被拖拽过，重置位置样式
+    this.editorContainer.style.transform = '';
+    this.editorContainer.style.top = '';
+    this.editorContainer.style.left = '';
     
     this.editor.innerHTML = content;
     this.editorOverlay.style.display = 'flex';

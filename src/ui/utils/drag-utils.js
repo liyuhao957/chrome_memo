@@ -53,6 +53,9 @@ class DragUtils {
     // 设置元素位置
     const setTranslate = (x, y) => {
       const { x: boundedX, y: boundedY } = checkBoundaries(x, y);
+      
+      // 使用绝对定位方式设置元素位置
+      element.style.position = 'absolute';
       element.style.transform = `translate(${boundedX}px, ${boundedY}px)`;
       
       // 更新当前位置
@@ -69,6 +72,14 @@ class DragUtils {
           e.target.tagName === 'SELECT' || 
           e.target.tagName === 'BUTTON') {
         return;
+      }
+      
+      // 确保使用绝对定位
+      element.style.position = 'absolute';
+      
+      // 如果元素是编辑器，标记它为已拖拽状态
+      if (element.classList.contains('chrome-memo-editor-container')) {
+        element.classList.add('has-been-dragged');
       }
       
       initialX = e.clientX - xOffset;

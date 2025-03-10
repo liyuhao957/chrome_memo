@@ -181,7 +181,7 @@
 
 /* 编辑器容器 */
 .chrome-memo-editor-container {
-  position: absolute;
+  position: relative;
   width: 600px;
   max-width: 90%;
   background-color: white;
@@ -191,6 +191,11 @@
   flex-direction: column;
   animation: slideIn 0.3s ease;
   overflow: hidden;
+}
+
+/* 标记为已被拖拽状态的编辑器 */
+.chrome-memo-editor-container.has-been-dragged {
+  position: absolute;
 }
 
 @keyframes slideIn {

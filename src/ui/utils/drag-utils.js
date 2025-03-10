@@ -258,5 +258,5 @@ class DragUtils {
   }
 }
 
-// 导出单例实例
-export const dragUtils = new DragUtils(); 
+// 创建全局单例实例
+window.dragUtils = new DragUtils(); 

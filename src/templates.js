@@ -4,10 +4,10 @@
  */
 
 import { templateManager } from './core/template-manager.js';
-import { templateListComponent } from './ui/components/template-list.js';
 
 document.addEventListener('DOMContentLoaded', function() {
   const container = document.body;
+  const templateListComponent = window.templateListComponent;
   
   // 初始化模板列表组件
   templateListComponent.initialize(container, useTemplate);

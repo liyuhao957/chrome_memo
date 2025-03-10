@@ -21,42 +21,115 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // 获取当前标签页
   async function getCurrentTab() {
-    const queryOptions = { active: true, currentWindow: true };
-    const [tab] = await chrome.tabs.query(queryOptions);
-    return tab;
+    try {
+      const queryOptions = { active: true, currentWindow: true };
+      const [tab] = await chrome.tabs.query(queryOptions);
+      return tab;
+    } catch (error) {
+      console.error('获取当前标签页失败:', error);
+      throw error;
+    }
   }
   
   // 初始化弹出窗口
   async function initPopup() {
-    // 获取当前标签页
-    currentTab = await getCurrentTab();
-    
-    // 检查当前网站是否有备忘录
-    await checkCurrentSiteMemo();
-    
-    // 加载所有保存的备忘录站点
-    await loadSavedSites();
-    
-    // 检查选中文本添加功能状态
-    checkSelectionFeatureStatus();
+    try {
+      // 获取当前标签页
+      currentTab = await getCurrentTab();
+      
+      // 如果获取不到标签页信息
+      if (!currentTab) {
+        statusElement.innerHTML = '无法获取当前页面信息';
+        return;
+      }
+      
+      // 检查当前网站是否有备忘录
+      await checkCurrentSiteMemo();
+      
+      // 加载所有保存的备忘录站点
+      await loadSavedSites();
+      
+      // 检查选中文本添加功能状态
+      checkSelectionFeatureStatus();
+    } catch (error) {
+      console.error('初始化弹出窗口失败:', error);
+      statusElement.innerHTML = '初始化失败，请重试';
+      // 启用基本功能
+      enableBasicFunctions();
+    }
+  }
+  
+  // 在发生错误时启用基本功能
+  function enableBasicFunctions() {
+    toggleMemoBtn.textContent = '创建备忘录';
+    toggleMemoBtn.disabled = false;
+    openEditorBtn.disabled = false;
+    toggleSelectionBtn.textContent = '开启选中文本添加';
+    toggleSelectionBtn.disabled = false;
+  }
+  
+  // 直接从存储获取状态（备用方案）
+  async function getStateFromStorage() {
+    try {
+      if (!currentTab) return null;
+      
+      const url = new URL(currentTab.url);
+      const domain = url.hostname;
+      
+      // 直接从存储中读取
+      return await storageManager.getMemo(domain);
+    } catch (error) {
+      console.error('从存储获取状态失败:', error);
+      return null;
+    }
   }
   
   // 检查当前网站是否有备忘录
   async function checkCurrentSiteMemo() {
     try {
       // 从当前标签页URL获取域名
+      if (!currentTab || !currentTab.url) {
+        statusElement.innerHTML = '无法获取当前网站信息';
+        return;
+      }
+      
       const url = new URL(currentTab.url);
       const domain = url.hostname;
       
-      // 查询存储中是否有该域名的备忘录
-      const response = await chrome.runtime.sendMessage({
-        action: 'getMemo',
-        domain: domain
-      });
+      if (!domain) {
+        statusElement.innerHTML = '无效的网站域名';
+        return;
+      }
       
-      if (response && response.memo) {
-        const memo = response.memo;
+      let memo = null;
+      let success = false;
+      
+      // 首先尝试通过消息获取
+      try {
+        const response = await chrome.runtime.sendMessage({
+          action: 'getMemo',
+          domain: domain
+        });
         
+        console.log('getMemo响应:', response);
+        
+        if (response && response.success) {
+          success = true;
+          memo = response.memo;
+        } else {
+          console.warn('通过消息获取备忘录失败:', response?.error || '未知错误');
+        }
+      } catch (error) {
+        console.error('发送消息失败:', error);
+      }
+      
+      // 如果消息方式失败，尝试直接从存储获取
+      if (!success) {
+        console.log('尝试直接从存储获取备忘录');
+        memo = await getStateFromStorage();
+      }
+      
+      if (memo) {
         // 更新状态显示
         statusElement.innerHTML = `
           <strong>当前网站:</strong> ${domain}<br>
@@ -78,6 +151,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
       console.error('检查当前网站备忘录失败:', error);
       statusElement.innerHTML = '无法检查当前网站的备忘录状态';
+      enableBasicFunctions();
     }
   }
   
@@ -117,6 +191,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
       console.error('加载站点列表失败:', error);
       showToast('加载站点列表失败', 'error');
+      emptyList.style.display = 'block';
+      emptyList.textContent = '加载站点列表失败';
     }
   }
   
@@ -172,14 +248,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // 格式化日期显示
   function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return '未知日期';
+    }
   }
   
   // 删除站点备忘录
@@ -205,6 +285,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 显示/隐藏备忘录
   async function toggleMemo() {
     try {
+      if (!currentTab) {
+        showToast('无法获取当前标签页信息', 'error');
+        return;
+      }
+      
       await chrome.tabs.sendMessage(currentTab.id, {
         action: 'toggleMemo'
       });
@@ -213,13 +298,18 @@ document.addEventListener('DOMContentLoaded', async function() {
       setTimeout(checkCurrentSiteMemo, 300);
     } catch (error) {
       console.error('切换备忘录显示状态失败:', error);
-      showToast('操作失败', 'error');
+      showToast('操作失败，请刷新页面后重试', 'error');
     }
   }
   
   // 打开编辑器
   async function openEditor() {
     try {
+      if (!currentTab) {
+        showToast('无法获取当前标签页信息', 'error');
+        return;
+      }
+      
       await chrome.tabs.sendMessage(currentTab.id, {
         action: 'openEditor'
       });
@@ -228,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       window.close();
     } catch (error) {
       console.error('打开编辑器失败:', error);
-      showToast('打开编辑器失败', 'error');
+      showToast('打开编辑器失败，请刷新页面后重试', 'error');
     }
   }
   
@@ -237,6 +327,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     isSelectionEnabled = !isSelectionEnabled;
     
     try {
+      if (!currentTab) {
+        showToast('无法获取当前标签页信息', 'error');
+        return;
+      }
+      
       await chrome.tabs.sendMessage(currentTab.id, {
         action: 'toggleSelection',
         enabled: isSelectionEnabled
@@ -246,13 +341,21 @@ document.addEventListener('DOMContentLoaded', async function() {
       showToast(isSelectionEnabled ? '已开启选中文本添加功能' : '已关闭选中文本添加功能');
     } catch (error) {
       console.error('切换选中文本添加功能失败:', error);
-      showToast('操作失败', 'error');
+      showToast('操作失败，请刷新页面后重试', 'error');
+      // 恢复状态
+      isSelectionEnabled = !isSelectionEnabled;
+      updateSelectionButtonText();
     }
   }
   
   // 检查选中文本添加功能状态
   async function checkSelectionFeatureStatus() {
     try {
+      if (!currentTab) {
+        console.warn('无法获取当前标签页信息');
+        return;
+      }
+      
       const response = await chrome.tabs.sendMessage(currentTab.id, {
         action: 'getSelectionStatus'
       });

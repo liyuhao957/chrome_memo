@@ -3,8 +3,6 @@
  * 处理备忘录的创建、更新、删除等核心操作
  */
 
-import { storageManager } from '../data/storage.js';
-
 class MemoManager {
   /**
    * 获取当前页面的域名
@@ -20,7 +18,7 @@ class MemoManager {
    */
   async loadCurrentMemo() {
     const domain = this.getCurrentDomain();
-    return await storageManager.getMemo(domain);
+    return await window.storageManager.getMemo(domain);
   }
   
   /**
@@ -45,7 +43,7 @@ class MemoManager {
       title: document.title
     };
     
-    return await storageManager.saveMemo(domain, memoData);
+    return await window.storageManager.saveMemo(domain, memoData);
   }
   
   /**
@@ -58,7 +56,7 @@ class MemoManager {
     if (!memo) return null;
     
     memo.position = position;
-    return await storageManager.saveMemo(this.getCurrentDomain(), memo);
+    return await window.storageManager.saveMemo(this.getCurrentDomain(), memo);
   }
   
   /**
@@ -71,7 +69,7 @@ class MemoManager {
     if (!memo) return null;
     
     memo.isVisible = isVisible;
-    return await storageManager.saveMemo(this.getCurrentDomain(), memo);
+    return await window.storageManager.saveMemo(this.getCurrentDomain(), memo);
   }
   
   /**
@@ -79,7 +77,7 @@ class MemoManager {
    * @returns {Promise<boolean>} - 删除成功返回true
    */
   async deleteCurrentMemo() {
-    return await storageManager.deleteMemo(this.getCurrentDomain());
+    return await window.storageManager.deleteMemo(this.getCurrentDomain());
   }
   
   /**
@@ -109,7 +107,7 @@ class MemoManager {
    * @returns {Promise<Array>} - 备忘录数据数组
    */
   async getAllMemosList() {
-    const allMemos = await storageManager.getAllMemos();
+    const allMemos = await window.storageManager.getAllMemos();
     
     return Object.keys(allMemos).map(domain => ({
       domain,
@@ -122,5 +120,5 @@ class MemoManager {
   }
 }
 
-// 导出单例实例
-export const memoManager = new MemoManager(); 
+// 创建全局单例实例
+window.memoManager = new MemoManager(); 

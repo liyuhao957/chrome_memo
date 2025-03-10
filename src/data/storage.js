@@ -175,5 +175,19 @@ class StorageManager {
   }
 }
 
-// 导出单例实例
-export const storageManager = new StorageManager(); 
+// 创建全局单例实例
+window.storageManager = new StorageManager();
+
+// 为了兼容ES模块导入
+try {
+  if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+    module.exports = { 
+      storageManager: window.storageManager 
+    };
+  }
+} catch (error) {
+  console.warn('模块导出失败，但这可能是正常的:', error);
+}
+
+// 导出单例实例(为ES模块方式提供支持)
+export const storageManager = window.storageManager; 

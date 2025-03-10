@@ -150,5 +150,5 @@ class SelectionUtils {
   }
 }
 
-// 导出单例实例
-export const selectionUtils = new SelectionUtils(); 
+// 创建全局单例实例
+window.selectionUtils = new SelectionUtils(); 

@@ -3,9 +3,6 @@
  * 提供富文本编辑功能
  */
 
-import { dragUtils } from '../utils/drag-utils.js';
-import { templateManager } from '../../core/template-manager.js';
-
 class EditorComponent {
   constructor() {
     this.editorOverlay = null;
@@ -123,7 +120,7 @@ class EditorComponent {
     this.templateSelector.addEventListener('change', async () => {
       const selectedValue = this.templateSelector.value;
       if (selectedValue) {
-        const templateContent = await templateManager.getTemplateContent(selectedValue);
+        const templateContent = await window.templateManager.getTemplateContent(selectedValue);
         if (templateContent) {
           this.editor.innerHTML = templateContent;
         }
@@ -187,7 +184,7 @@ class EditorComponent {
    */
   async loadTemplates() {
     try {
-      const templates = await templateManager.getTemplateList();
+      const templates = await window.templateManager.getTemplateList();
       
       // 清除已有选项（除了默认选项）
       while (this.templateSelector.options.length > 1) {
@@ -235,7 +232,7 @@ class EditorComponent {
     }
     
     // 创建新的拖拽实例
-    this.dragHelper = dragUtils.makeDraggable(
+    this.dragHelper = window.dragUtils.makeDraggable(
       this.editorContainer,
       handle
     );
@@ -319,7 +316,7 @@ class EditorComponent {
     if (!content) return;
     
     try {
-      await templateManager.saveContentAsTemplate(content, name);
+      await window.templateManager.saveContentAsTemplate(content, name);
       this.loadTemplates(); // 重新加载模板列表
       
       // 显示成功提示
@@ -354,5 +351,5 @@ class EditorComponent {
   }
 }
 
-// 导出单例实例
-export const editorComponent = new EditorComponent(); 
+// 创建全局单例实例
+window.editorComponent = new EditorComponent(); 

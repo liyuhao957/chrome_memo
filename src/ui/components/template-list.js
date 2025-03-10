@@ -3,9 +3,6 @@
  * 负责模板的显示和管理
  */
 
-import { templateManager } from '../../core/template-manager.js';
-import { dragUtils } from '../utils/drag-utils.js';
-
 class TemplateListComponent {
   constructor() {
     this.templateList = null;
@@ -137,7 +134,7 @@ class TemplateListComponent {
    */
   async loadTemplates() {
     try {
-      const templates = await templateManager.getTemplateList();
+      const templates = await window.templateManager.getTemplateList();
       
       // 清空模板列表
       this.templateList.innerHTML = '';
@@ -279,11 +276,11 @@ class TemplateListComponent {
       this.sortableHelper.cleanup();
     }
     
-    this.sortableHelper = dragUtils.makeTemplatesSortable(
+    this.sortableHelper = window.dragUtils.makeTemplatesSortable(
       templateItems,
       async (newOrder) => {
         // 保存新的排序顺序
-        await templateManager.updateTemplateOrder(newOrder);
+        await window.templateManager.updateTemplateOrder(newOrder);
       }
     );
   }
@@ -329,7 +326,7 @@ class TemplateListComponent {
     }
     
     try {
-      await templateManager.saveTemplate(name, content);
+      await window.templateManager.saveTemplate(name, content);
       this.hideTemplateEditor();
       this.loadTemplates();
     } catch (error) {
@@ -357,7 +354,7 @@ class TemplateListComponent {
     }
     
     try {
-      await templateManager.deleteTemplate(name);
+      await window.templateManager.deleteTemplate(name);
       this.loadTemplates();
     } catch (error) {
       console.error('删除模板失败:', error);
@@ -366,5 +363,5 @@ class TemplateListComponent {
   }
 }
 
-// 导出单例实例
-export const templateListComponent = new TemplateListComponent(); 
+// 创建全局单例实例
+window.templateListComponent = new TemplateListComponent(); 

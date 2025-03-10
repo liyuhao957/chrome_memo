@@ -32,12 +32,24 @@
     }
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": [
+        "data/storage.js",
+        "data/template-store.js",
+        "core/memo-manager.js",
+        "core/template-manager.js",
+        "core/selection-utils.js",
+        "ui/utils/drag-utils.js",
+        "ui/components/memo.js",
+        "ui/components/editor.js",
+        "ui/components/template-list.js",
+        "content.js"
+      ],
       "css": ["ui/styles/memo.css"]
     }
   ],

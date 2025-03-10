@@ -3,9 +3,6 @@
  * 负责备忘录UI的创建和管理
  */
 
-import { dragUtils } from '../utils/drag-utils.js';
-import { memoManager } from '../../core/memo-manager.js';
-
 class MemoComponent {
   constructor() {
     this.memoContainer = null;
@@ -24,7 +21,7 @@ class MemoComponent {
     this.onEditClick = onEditClick;
     
     // 加载当前网站的备忘录数据
-    const memo = await memoManager.loadCurrentMemo();
+    const memo = await window.memoManager.loadCurrentMemo();
     
     // 创建备忘录UI
     this.createMemoUI(memo);
@@ -174,7 +171,7 @@ class MemoComponent {
     document.body.appendChild(this.floatingIcon);
     
     // 使悬浮图标可拖拽
-    dragUtils.makeDraggable(this.floatingIcon);
+    window.dragUtils.makeDraggable(this.floatingIcon);
   }
   
   /**
@@ -189,7 +186,7 @@ class MemoComponent {
     this.floatingIcon.style.display = 'none';
     
     // 更新存储中的可见状态
-    await memoManager.setMemoVisibility(true);
+    await window.memoManager.setMemoVisibility(true);
   }
   
   /**
@@ -204,7 +201,7 @@ class MemoComponent {
     this.isMinimized = false;
     
     // 更新存储中的可见状态
-    await memoManager.setMemoVisibility(false);
+    await window.memoManager.setMemoVisibility(false);
   }
   
   /**
@@ -257,12 +254,12 @@ class MemoComponent {
     }
     
     // 创建新的拖拽实例
-    this.dragHelper = dragUtils.makeDraggable(
+    this.dragHelper = window.dragUtils.makeDraggable(
       this.memoContainer,
       handle,
       async (position) => {
         // 保存新位置到存储
-        await memoManager.updateMemoPosition(position);
+        await window.memoManager.updateMemoPosition(position);
       }
     );
     
@@ -278,9 +275,9 @@ class MemoComponent {
   async resetPosition() {
     const defaultPosition = { x: 20, y: 20 };
     
-    dragUtils.resetPosition(this.memoContainer, defaultPosition, async () => {
+    window.dragUtils.resetPosition(this.memoContainer, defaultPosition, async () => {
       // 保存新位置到存储
-      await memoManager.updateMemoPosition(defaultPosition);
+      await window.memoManager.updateMemoPosition(defaultPosition);
     });
   }
   
@@ -294,9 +291,9 @@ class MemoComponent {
     this.memoContent.innerHTML = content;
     
     // 保存更新后的内容
-    await memoManager.saveMemo(content);
+    await window.memoManager.saveMemo(content);
   }
 }
 
-// 导出备忘录组件类
-export const memoComponent = new MemoComponent(); 
+// 创建全局单例实例
+window.memoComponent = new MemoComponent(); 

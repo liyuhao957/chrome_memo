@@ -163,5 +163,5 @@ class TemplateStore {
   }
 }
 
-// 导出单例实例
-export const templateStore = new TemplateStore(); 
+// 创建全局单例实例
+window.templateStore = new TemplateStore(); 

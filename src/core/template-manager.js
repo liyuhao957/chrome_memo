@@ -3,15 +3,13 @@
  * 负责模板的操作和应用
  */
 
-import { templateStore } from '../data/template-store.js';
-
 class TemplateManager {
   /**
    * 获取所有模板列表
    * @returns {Promise<Array>} - 模板对象数组
    */
   async getTemplateList() {
-    return await templateStore.getTemplateList();
+    return await window.templateStore.getTemplateList();
   }
   
   /**
@@ -25,7 +23,7 @@ class TemplateManager {
       throw new Error('模板名称和内容不能为空');
     }
     
-    return await templateStore.saveTemplate(name, content);
+    return await window.templateStore.saveTemplate(name, content);
   }
   
   /**
@@ -34,7 +32,7 @@ class TemplateManager {
    * @returns {Promise<string|null>} - 模板内容或null
    */
   async getTemplateContent(name) {
-    const template = await templateStore.getTemplate(name);
+    const template = await window.templateStore.getTemplate(name);
     return template ? template.content : null;
   }
   
@@ -44,7 +42,7 @@ class TemplateManager {
    * @returns {Promise<boolean>} - 删除成功返回true
    */
   async deleteTemplate(name) {
-    return await templateStore.deleteTemplate(name);
+    return await window.templateStore.deleteTemplate(name);
   }
   
   /**
@@ -73,7 +71,7 @@ class TemplateManager {
    * @returns {Promise<boolean>} - 更新成功返回true
    */
   async updateTemplateOrder(nameOrder) {
-    return await templateStore.updateTemplateOrder(nameOrder);
+    return await window.templateStore.updateTemplateOrder(nameOrder);
   }
   
   /**
@@ -96,5 +94,5 @@ class TemplateManager {
   }
 }
 
-// 导出单例实例
-export const templateManager = new TemplateManager(); 
+// 创建全局单例实例
+window.templateManager = new TemplateManager(); 

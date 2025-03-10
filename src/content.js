@@ -96,6 +96,13 @@ function handleMessages(message, sender, sendResponse) {
         });
         break;
         
+      case 'dataImported':
+        // 数据导入成功，重新初始化备忘录
+        console.log('收到数据导入通知，重新初始化备忘录');
+        window.memoComponent.initialize(openEditor);
+        sendResponse({ success: true });
+        break;
+        
       case 'addSelectionToMemo':
         // 添加选中文本到备忘录
         if (message.text) {

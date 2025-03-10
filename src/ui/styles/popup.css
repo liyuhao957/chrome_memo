@@ -306,6 +306,10 @@ button:disabled {
   background-color: rgba(220, 53, 69, 0.9);
 }
 
+.toast.info {
+  background-color: rgba(13, 110, 253, 0.9);
+}
+
 /* 加载指示器 */
 .loading {
   display: inline-block;

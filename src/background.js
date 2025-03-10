@@ -261,6 +261,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
         
+        // 发送导入成功的消息给所有标签页
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach(tab => {
+            try {
+              chrome.tabs.sendMessage(tab.id, { action: 'dataImported' })
+                .catch(err => console.log('Tab may not have content script:', tab.id));
+            } catch (e) {
+              // 忽略发送失败的标签页
+            }
+          });
+        });
+        
         sendResponse({ success: true });
       });
     } catch (error) {

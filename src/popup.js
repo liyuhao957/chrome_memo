@@ -188,6 +188,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
       }
       
+      // 确保allMemos是一个对象
+      if (!allMemos || typeof allMemos !== 'object') {
+        console.warn('获取到的备忘录数据不是对象:', allMemos);
+        allMemos = {};
+      }
+      
       const sites = Object.keys(allMemos).map(domain => ({
         domain,
         content: allMemos[domain].content,
@@ -223,11 +229,15 @@ document.addEventListener('DOMContentLoaded', async function() {
           siteList.appendChild(siteItem);
         });
       }
+      
+      // 返回加载的站点数量，方便调试
+      return sites.length;
     } catch (error) {
       console.error('加载站点列表失败:', error);
       showToast('加载站点列表失败', 'error');
       emptyList.style.display = 'block';
       emptyList.textContent = '加载站点列表失败';
+      throw error; // 重新抛出错误，让调用者知道加载失败
     }
   }
   
@@ -563,6 +573,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             throw new Error('无效的数据格式');
           }
           
+          // 显示加载中提示
+          showToast('正在导入数据...', 'info');
+          
           // 尝试使用background.js中的函数导入
           try {
             const response = await chrome.runtime.sendMessage({ 
@@ -589,8 +602,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
           }
           
+          // 强制刷新Chrome存储中的数据
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           // 重新加载站点列表
-          await loadSavedSites();
+          try {
+            await loadSavedSites();
+          } catch (error) {
+            console.error('重新加载站点列表失败:', error);
+            // 如果加载失败，尝试再次加载
+            await new Promise(resolve => setTimeout(resolve, 200));
+            await loadSavedSites();
+          }
+          
+          // 更新当前站点状态
+          if (currentTab && currentTab.url) {
+            await checkCurrentSiteMemo();
+          }
           
           showToast('数据导入成功');
         } catch (error) {

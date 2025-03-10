@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="ui/styles/popup.css">
+</head>
+<body>
+  <h1>网站备忘录</h1>
+  <div class="memo-status" id="status">
+    正在检查当前网站的备忘录状态...
+  </div>
+  
+  <div class="actions" id="actions">
+    <button id="toggleMemoBtn">显示/隐藏备忘录</button>
+    <button id="openEditorBtn">编辑备忘录</button>
+    <button id="toggleSelectionBtn">开启选中文本添加</button>
+  </div>
+  
+  <h2>已保存的备忘录站点</h2>
+  <div class="saved-sites">
+    <ul class="site-list" id="siteList">
+      <!-- 站点列表将通过JavaScript动态添加 -->
+    </ul>
+    <div id="emptyList" class="empty-list" style="display: none;">
+      暂无保存的备忘录
+    </div>
+  </div>
+  
+  <div class="divider"></div>
+  
+  <h2>数据备份</h2>
+  <div class="backup-actions">
+    <button id="exportDataBtn" class="backup-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      导出数据
+    </button>
+    <button id="importDataBtn" class="backup-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+      </svg>
+      导入数据
+    </button>
+  </div>
+  
+  <a href="templates.html" target="_blank" class="templates-link">模板管理 &rarr;</a>
+  
+  <!-- 用于导入文件的隐藏input -->
+  <input type="file" id="fileInput" style="display: none;" accept=".json">
+  
+  <script src="popup.js" type="module"></script>
+</body>
+</html> 

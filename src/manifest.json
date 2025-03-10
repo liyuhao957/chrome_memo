@@ -1,0 +1,61 @@
+{
+  "name": "网站备忘录",
+  "version": "1.0.0",
+  "description": "在任意网站上创建、管理和显示备忘录",
+  "manifest_version": 3,
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "activeTab"
+  ],
+  "commands": {
+    "toggle-memo": {
+      "suggested_key": {
+        "default": "Alt+M",
+        "mac": "Alt+M"
+      },
+      "description": "显示/隐藏备忘录"
+    },
+    "open-editor": {
+      "suggested_key": {
+        "default": "Alt+E",
+        "mac": "Alt+E"
+      },
+      "description": "打开备忘录编辑器"
+    },
+    "toggle-quick-add": {
+      "suggested_key": {
+        "default": "Alt+Q",
+        "mac": "Alt+Q"
+      },
+      "description": "开启/关闭选中文本添加功能"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["ui/styles/memo.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "web_accessible_resources": [{
+    "resources": ["templates.html"],
+    "matches": ["<all_urls>"]
+  }]
+} 

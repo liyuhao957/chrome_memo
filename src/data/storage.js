@@ -109,21 +109,9 @@ class StorageManager {
       // 获取所有备忘录数据
       const memos = await this.getAllMemos();
       
-      // 获取所有模板数据
-      const templates = await new Promise((resolve, reject) => {
-        chrome.storage.sync.get('templates', (result) => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-          } else {
-            resolve(result.templates || {});
-          }
-        });
-      });
-      
       // 返回包含所有数据的对象
       return {
         memos,
-        templates,
         exportedAt: new Date().toISOString(),
         version: '1.0.0'
       };
@@ -134,38 +122,21 @@ class StorageManager {
   }
   
   /**
-   * 导入备忘录和模板数据
-   * @param {Object} data - 要导入的数据对象
-   * @returns {Promise<boolean>} - 导入成功返回true
+   * 导入数据
+   * @param {Object} data - 要导入的数据
+   * @returns {Promise<void>}
    */
   async importData(data) {
     try {
       // 验证数据格式
-      if (!data || !data.memos || !data.templates) {
-        throw new Error('导入数据格式无效');
+      if (!data || !data.memos) {
+        throw new Error('无效的数据格式');
       }
       
       // 导入备忘录数据
-      await new Promise((resolve, reject) => {
-        chrome.storage.sync.set({ memos: data.memos }, () => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-          } else {
-            resolve();
-          }
-        });
-      });
-      
-      // 导入模板数据
-      await new Promise((resolve, reject) => {
-        chrome.storage.sync.set({ templates: data.templates }, () => {
-          if (chrome.runtime.lastError) {
-            reject(chrome.runtime.lastError);
-          } else {
-            resolve();
-          }
-        });
-      });
+      for (const domain in data.memos) {
+        await this.saveMemo(domain, data.memos[domain]);
+      }
       
       return true;
     } catch (error) {

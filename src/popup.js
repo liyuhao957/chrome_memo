@@ -452,11 +452,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
       let exportedData;
       
-      // 如果全局变量可用，使用它
-      if (window.storageManager) {
-        exportedData = await window.storageManager.exportData();
-      } else {
-        // 否则直接从Chrome存储中导出
+      // 尝试使用background.js中的函数
+      try {
+        exportedData = await chrome.runtime.sendMessage({ action: 'exportData' });
+      } catch (error) {
+        // 如果background.js不可用，直接从storage获取数据
         const memos = await new Promise((resolve, reject) => {
           chrome.storage.sync.get('memos', (result) => {
             if (chrome.runtime.lastError) {
@@ -467,19 +467,8 @@ document.addEventListener('DOMContentLoaded', async function() {
           });
         });
         
-        const templates = await new Promise((resolve, reject) => {
-          chrome.storage.sync.get('templates', (result) => {
-            if (chrome.runtime.lastError) {
-              reject(chrome.runtime.lastError);
-            } else {
-              resolve(result.templates || {});
-            }
-          });
-        });
-        
         exportedData = {
           memos,
-          templates,
           exportedAt: new Date().toISOString(),
           version: '1.0.0'
         };
@@ -490,26 +479,29 @@ document.addEventListener('DOMContentLoaded', async function() {
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
       const dataUrl = URL.createObjectURL(dataBlob);
       
-      // 创建下载链接并触发点击
+      // 创建下载链接并触发下载
       const downloadLink = document.createElement('a');
       downloadLink.href = dataUrl;
       downloadLink.download = `chrome-memo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(downloadLink);
       downloadLink.click();
+      document.body.removeChild(downloadLink);
       
-      // 释放URL
-      setTimeout(() => URL.revokeObjectURL(dataUrl), 100);
+      // 释放URL对象
+      setTimeout(() => {
+        URL.revokeObjectURL(dataUrl);
+      }, 100);
       
-      showToast('导出成功');
+      showToast('数据导出成功');
     } catch (error) {
       console.error('导出数据失败:', error);
-      showToast('导出数据失败', 'error');
+      showToast('导出失败: ' + error.message, 'error');
     }
   }
   
   // 导入数据
   function importData() {
-    // 触发文件选择
-    fileInput.click();
+    document.getElementById('fileInput').click();
   }
   
   // 处理文件选择后的导入操作
@@ -522,52 +514,37 @@ document.addEventListener('DOMContentLoaded', async function() {
       
       reader.onload = async (e) => {
         try {
-          // 解析JSON数据
           const data = JSON.parse(e.target.result);
           
-          // 确认导入
-          if (confirm('导入将覆盖当前所有备忘录和模板数据，确定要继续吗？')) {
-            // 尝试多种导入方式
-            let success = false;
-            
-            // 如果全局变量可用，使用它
-            if (window.storageManager) {
-              await window.storageManager.importData(data);
-              success = true;
-            } else {
-              // 否则直接使用Chrome存储API
-              await new Promise((resolve, reject) => {
-                chrome.storage.sync.set({ memos: data.memos }, () => {
-                  if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                  } else {
-                    resolve();
-                  }
-                });
-              });
-              
-              await new Promise((resolve, reject) => {
-                chrome.storage.sync.set({ templates: data.templates }, () => {
-                  if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
-                  } else {
-                    resolve();
-                  }
-                });
-              });
-              
-              success = true;
-            }
-            
-            // 更新状态和列表
-            await checkCurrentSiteMemo();
-            await loadSavedSites();
-            
-            showToast('导入成功');
+          // 验证数据格式
+          if (!data || !data.memos) {
+            throw new Error('无效的数据格式');
           }
-        } catch (parseError) {
-          console.error('解析导入文件失败:', parseError);
-          showToast('无效的备份文件格式', 'error');
+          
+          // 尝试使用background.js中的函数导入
+          try {
+            await chrome.runtime.sendMessage({ 
+              action: 'importData', 
+              data 
+            });
+          } catch (error) {
+            // 如果background.js不可用，直接保存到storage
+            // 导入备忘录数据
+            chrome.storage.sync.set({ memos: data.memos }, () => {
+              if (chrome.runtime.lastError) {
+                console.error('导入备忘录失败:', chrome.runtime.lastError);
+                showToast('导入备忘录失败', 'error');
+              }
+            });
+          }
+          
+          // 重新加载站点列表
+          await loadSavedSites();
+          
+          showToast('数据导入成功');
+        } catch (error) {
+          console.error('处理导入数据失败:', error);
+          showToast('导入失败: ' + error.message, 'error');
         }
       };
       

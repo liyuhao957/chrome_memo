@@ -5,13 +5,11 @@
 
 class EditorComponent {
   constructor() {
-    this.editorOverlay = null;
-    this.editorContainer = null;
+    this.container = null;
     this.editor = null;
-    this.dragHelper = null;
-    this.saveCallback = null;
-    this.cancelCallback = null;
-    this.templateSelector = null;
+    this.onSave = null;
+    this.onCancel = null;
+    this.isOpen = false;
   }
   
   /**
@@ -20,10 +18,9 @@ class EditorComponent {
    * @param {Function} onCancel - 取消回调函数
    */
   initialize(onSave, onCancel) {
-    this.saveCallback = onSave;
-    this.cancelCallback = onCancel;
+    this.onSave = onSave;
+    this.onCancel = onCancel;
     
-    this.createEditorUI();
     return this;
   }
   
@@ -32,18 +29,14 @@ class EditorComponent {
    */
   createEditorUI() {
     // 如果已存在，先移除
-    if (this.editorOverlay) {
-      document.body.removeChild(this.editorOverlay);
+    if (this.container) {
+      document.body.removeChild(this.container);
     }
     
-    // 创建遮罩层
-    this.editorOverlay = document.createElement('div');
-    this.editorOverlay.className = 'chrome-memo-editor-overlay';
-    this.editorOverlay.style.display = 'none';
-    
     // 创建编辑器容器
-    this.editorContainer = document.createElement('div');
-    this.editorContainer.className = 'chrome-memo-editor-container';
+    this.container = document.createElement('div');
+    this.container.className = 'chrome-memo-editor-container';
+    this.container.style.display = 'none'; // 确保初始状态为隐藏
     
     // 创建编辑器头部
     const header = document.createElement('div');
@@ -72,20 +65,20 @@ class EditorComponent {
     header.appendChild(siteInfo);
     header.appendChild(closeButton);
     
-    // 创建工具栏
+    // 添加格式化工具栏
     const toolbar = document.createElement('div');
     toolbar.className = 'chrome-memo-editor-toolbar';
     
-    // 工具栏按钮
+    // 添加格式化按钮
     const formatButtons = [
-      { title: '粗体', command: 'bold', icon: '<b>B</b>' },
-      { title: '斜体', command: 'italic', icon: '<i>I</i>' },
-      { title: '下划线', command: 'underline', icon: '<u>U</u>' },
-      { title: '无序列表', command: 'insertUnorderedList', icon: '•' },
-      { title: '有序列表', command: 'insertOrderedList', icon: '1.' }
+      { command: 'bold', icon: '<b>B</b>', title: '粗体' },
+      { command: 'italic', icon: '<i>I</i>', title: '斜体' },
+      { command: 'underline', icon: '<u>U</u>', title: '下划线' },
+      { command: 'strikeThrough', icon: '<s>S</s>', title: '删除线' },
+      { command: 'insertOrderedList', icon: '1.', title: '有序列表' },
+      { command: 'insertUnorderedList', icon: '•', title: '无序列表' }
     ];
     
-    // 添加格式按钮
     formatButtons.forEach(button => {
       const btnElement = document.createElement('button');
       btnElement.title = button.title;
@@ -97,59 +90,9 @@ class EditorComponent {
       toolbar.appendChild(btnElement);
     });
     
-    // 模板选择器
-    const templateWrapper = document.createElement('div');
-    templateWrapper.className = 'template-selector-wrapper';
-    
-    const templateLabel = document.createElement('span');
-    templateLabel.className = 'template-selector-label';
-    templateLabel.textContent = '使用模板：';
-    
-    this.templateSelector = document.createElement('select');
-    this.templateSelector.id = 'template-selector';
-    
-    // 添加默认选项
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = '选择模板...';
-    this.templateSelector.appendChild(defaultOption);
-    
-    // 加载模板到选择器
-    this.loadTemplates();
-    
-    // 模板选择事件
-    this.templateSelector.addEventListener('change', async () => {
-      const selectedValue = this.templateSelector.value;
-      if (selectedValue) {
-        const templateContent = await window.templateManager.getTemplateContent(selectedValue);
-        if (templateContent) {
-          this.editor.innerHTML = templateContent;
-        }
-        
-        // 重置选择器
-        this.templateSelector.value = '';
-      }
-    });
-    
-    templateWrapper.appendChild(templateLabel);
-    templateWrapper.appendChild(this.templateSelector);
-    toolbar.appendChild(templateWrapper);
-    
-    // 创建编辑器
-    this.editor = document.createElement('div');
-    this.editor.className = 'chrome-memo-editor';
-    this.editor.contentEditable = true;
-    this.editor.setAttribute('placeholder', '在此处输入备忘录内容...');
-    
-    // 编辑器底部
-    const footer = document.createElement('div');
-    footer.className = 'chrome-memo-editor-footer';
-    
-    // 取消按钮
-    const cancelButton = document.createElement('button');
-    cancelButton.className = 'chrome-memo-editor-cancel';
-    cancelButton.textContent = '取消';
-    cancelButton.addEventListener('click', () => this.cancel());
+    // 添加按钮容器
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'chrome-memo-editor-footer';
     
     // 保存按钮
     const saveButton = document.createElement('button');
@@ -157,58 +100,42 @@ class EditorComponent {
     saveButton.textContent = '保存';
     saveButton.addEventListener('click', () => this.save());
     
-    // 添加按钮到底部
-    footer.appendChild(cancelButton);
-    footer.appendChild(saveButton);
+    // 取消按钮
+    const cancelButton = document.createElement('button');
+    cancelButton.className = 'chrome-memo-editor-cancel';
+    cancelButton.textContent = '取消';
+    cancelButton.addEventListener('click', () => this.cancel());
     
-    // 将所有元素添加到编辑器容器
-    this.editorContainer.appendChild(header);
-    this.editorContainer.appendChild(toolbar);
-    this.editorContainer.appendChild(this.editor);
-    this.editorContainer.appendChild(footer);
+    // 添加按钮到容器
+    buttonContainer.appendChild(saveButton);
+    buttonContainer.appendChild(cancelButton);
     
-    // 将编辑器容器添加到遮罩层
-    this.editorOverlay.appendChild(this.editorContainer);
+    // 创建编辑器
+    this.editor = document.createElement('div');
+    this.editor.className = 'chrome-memo-editor';
+    this.editor.contentEditable = true;
+    this.editor.setAttribute('placeholder', '在此处输入备忘录内容...');
+    
+    // 组装编辑器
+    this.container.appendChild(header);
+    this.container.appendChild(toolbar);
+    this.container.appendChild(this.editor);
+    this.container.appendChild(buttonContainer);
     
     // 添加到文档
-    document.body.appendChild(this.editorOverlay);
+    document.body.appendChild(this.container);
     
-    // 使编辑器可拖拽
+    // 使编辑器可拖动
     this.makeDraggable(header);
     
-    // 添加样式效果
     this.addFormatButtonsHoverEffect();
-  }
-  
-  /**
-   * 加载模板到选择器
-   */
-  async loadTemplates() {
-    try {
-      const templates = await window.templateManager.getTemplateList();
-      
-      // 清除已有选项（除了默认选项）
-      while (this.templateSelector.options.length > 1) {
-        this.templateSelector.remove(1);
-      }
-      
-      // 添加模板选项
-      templates.forEach(template => {
-        const option = document.createElement('option');
-        option.value = template.name;
-        option.textContent = template.name;
-        this.templateSelector.appendChild(option);
-      });
-    } catch (error) {
-      console.error('加载模板失败:', error);
-    }
   }
   
   /**
    * 为格式按钮添加悬停效果
    */
   addFormatButtonsHoverEffect() {
-    const toolbar = this.editorContainer.querySelector('.chrome-memo-editor-toolbar');
+    const toolbar = this.container.querySelector('.chrome-memo-editor-toolbar');
     const buttons = toolbar.querySelectorAll('button');
     
     buttons.forEach(button => {
@@ -224,22 +151,27 @@ class EditorComponent {
   
   /**
    * 使编辑器可拖拽
-   * @param {HTMLElement} handle - 拖拽把手
+   * @param {HTMLElement} handle - 拖拽把手元素
    */
   makeDraggable(handle) {
-    // 如果已有拖拽实例，先清理
-    if (this.dragHelper) {
-      this.dragHelper.cleanup();
+    if (!window.dragUtils) {
+      console.error('DragUtils未初始化，无法启用拖拽功能');
+      return;
     }
     
     // 创建新的拖拽实例
     this.dragHelper = window.dragUtils.makeDraggable(
-      this.editorContainer,
+      this.container,
       handle,
       // 拖拽结束回调
       () => {
         // 标记编辑器已被拖拽，使用绝对定位
-        this.editorContainer.classList.add('has-been-dragged');
+        this.container.classList.add('has-been-dragged');
+        
+        // 确保拖拽后不会回到原位置
+        if (this.container.classList.contains('has-been-dragged')) {
+          this.container.style.transform = 'none';
+        }
       }
     );
   }
@@ -249,32 +181,31 @@ class EditorComponent {
    * @param {string} content - 初始内容
    */
   open(content = '') {
-    if (!this.editorOverlay) {
+    if (!this.container) {
       this.createEditorUI();
     }
     
     // 移除已拖拽标记，返回到默认居中状态
-    this.editorContainer.classList.remove('has-been-dragged');
+    this.container.classList.remove('has-been-dragged');
     
     // 如果之前被拖拽过，重置位置样式
-    this.editorContainer.style.transform = '';
-    this.editorContainer.style.top = '';
-    this.editorContainer.style.left = '';
+    this.container.style.transform = 'translate(-50%, -50%)';
+    this.container.style.top = '50%';
+    this.container.style.left = '50%';
     
     this.editor.innerHTML = content;
-    this.editorOverlay.style.display = 'flex';
+    this.container.style.display = 'flex';
+    this.isOpen = true;
     this.editor.focus();
-    
-    // 重新加载模板
-    this.loadTemplates();
   }
   
   /**
    * 关闭编辑器
    */
   close() {
-    if (this.editorOverlay) {
-      this.editorOverlay.style.display = 'none';
+    if (this.container) {
+      this.container.style.display = 'none';
+      this.isOpen = false;
     }
   }
   
@@ -284,8 +215,8 @@ class EditorComponent {
   save() {
     const content = this.editor.innerHTML;
     
-    if (this.saveCallback) {
-      this.saveCallback(content);
+    if (this.onSave) {
+      this.onSave(content);
     }
     
     this.close();
@@ -295,39 +226,19 @@ class EditorComponent {
    * 取消编辑
    */
   cancel() {
-    if (this.cancelCallback) {
-      this.cancelCallback();
+    if (this.onCancel) {
+      this.onCancel();
     }
     
     this.close();
   }
   
   /**
-   * 获取当前编辑器内容
-   * @returns {string} 内容HTML
+   * 获取编辑器内容
+   * @returns {string} 编辑器内容
    */
   getContent() {
     return this.editor ? this.editor.innerHTML : '';
-  }
-  
-  /**
-   * 保存当前内容为模板
-   * @param {string} name - 模板名称，为空时自动生成
-   */
-  async saveAsTemplate(name = '') {
-    const content = this.getContent();
-    if (!content) return;
-    
-    try {
-      await window.templateManager.saveContentAsTemplate(content, name);
-      this.loadTemplates(); // 重新加载模板列表
-      
-      // 显示成功提示
-      this.showToast('已保存为模板');
-    } catch (error) {
-      console.error('保存模板失败:', error);
-      this.showToast('保存模板失败', 'error');
-    }
   }
   
   /**

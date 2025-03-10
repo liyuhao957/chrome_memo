@@ -91,10 +91,6 @@ chrome.runtime.onInstalled.addListener((details) => {
     console.log('网站备忘录扩展已安装');
     
     // 可以在这里设置默认配置或显示欢迎页面
-    // 打开欢迎页面或说明
-    chrome.tabs.create({
-      url: chrome.runtime.getURL('templates.html')
-    });
   } else if (details.reason === 'update') {
     // 扩展更新
     console.log(`网站备忘录扩展已更新到版本 ${chrome.runtime.getManifest().version}`);

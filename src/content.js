@@ -39,6 +39,11 @@ async function initializeMemo() {
       }
     );
     
+    // 确保编辑器不会自动打开
+    if (window.editorComponent.isOpen) {
+      window.editorComponent.close();
+    }
+    
     // 初始化选中文本处理
     if (!window.selectionUtils) {
       console.error('SelectionUtils未初始化');
@@ -135,20 +140,17 @@ function openEditor(initialContent = '') {
 // 确保所有脚本都加载完成
 function waitForScriptsToLoad() {
   if (window.storageManager && 
-      window.templateStore && 
       window.memoManager && 
-      window.templateManager && 
       window.selectionUtils && 
       window.dragUtils && 
       window.memoComponent && 
-      window.editorComponent && 
-      window.templateListComponent) {
+      window.editorComponent) {
     
     console.log('所有组件已加载完成，初始化备忘录...');
     initializeMemo();
   } else {
     console.log('等待脚本加载...');
-    setTimeout(waitForScriptsToLoad, 200);
+    setTimeout(waitForScriptsToLoad, 100);
   }
 }
 

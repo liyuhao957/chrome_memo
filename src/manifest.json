@@ -39,14 +39,11 @@
       "matches": ["<all_urls>"],
       "js": [
         "data/storage.js",
-        "data/template-store.js",
         "core/memo-manager.js",
-        "core/template-manager.js",
         "core/selection-utils.js",
         "ui/utils/drag-utils.js",
         "ui/components/memo.js",
         "ui/components/editor.js",
-        "ui/components/template-list.js",
         "content.js"
       ],
       "css": ["ui/styles/memo.css"]
@@ -64,9 +61,5 @@
     "16": "assets/icons/icon16.png",
     "48": "assets/icons/icon48.png",
     "128": "assets/icons/icon128.png"
-  },
-  "web_accessible_resources": [{
-    "resources": ["templates.html"],
-    "matches": ["<all_urls>"]
-  }]
+  }
 } 

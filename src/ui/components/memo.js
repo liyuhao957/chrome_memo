@@ -134,11 +134,23 @@ class MemoComponent {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 12px;
-        background-color: #7c4dff;
+        padding: 14px 18px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
         color: white;
         cursor: move;
         user-select: none;
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .memo-header::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.3);
       }
       
       .site-indicator {
@@ -206,21 +218,24 @@ class MemoComponent {
       
       .copy-success {
         position: absolute;
-        bottom: 10px;
+        bottom: 15px;
         left: 50%;
         transform: translateX(-50%);
-        background-color: rgba(0, 0, 0, 0.7);
+        background-color: rgba(0, 0, 0, 0.8);
         color: white;
-        padding: 6px 12px;
-        border-radius: 4px;
-        font-size: 12px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
         opacity: 0;
-        transition: opacity 0.3s;
+        transition: opacity 0.3s, transform 0.3s;
         pointer-events: none;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 2147483647;
       }
       
       .copy-success.show {
         opacity: 1;
+        transform: translateX(-50%) translateY(-5px);
       }
       
       /* 快捷键提示框样式 */

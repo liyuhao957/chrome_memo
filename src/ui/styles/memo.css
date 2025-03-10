@@ -4,19 +4,33 @@
   bottom: 20px;
   right: 20px;
   width: 320px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 3px 10px rgba(0, 0, 0, 0.1);
   background-color: #fff;
   z-index: 2147483647;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   border: 1px solid rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  transform-origin: bottom right;
+  animation: memo-appear 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes memo-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .chrome-memo-container:hover {
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.18), 0 5px 15px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
 }
 
 /* 备忘录头部 */
@@ -24,13 +38,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #6e8efb, #7c4dff);
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: white;
   cursor: move;
   user-select: none;
   position: relative;
   overflow: hidden;
+}
+
+.chrome-memo-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .chrome-memo-header::after {
@@ -59,12 +83,14 @@
 }
 
 .chrome-memo-site-indicator {
-  font-size: 13px;
+  font-size: 14px;
   max-width: 180px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
+  letter-spacing: 0.3px;
 }
 
 .chrome-memo-header strong {
@@ -85,8 +111,8 @@
   background: rgba(255, 255, 255, 0.15);
   border: none;
   color: white;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -96,6 +122,8 @@
   transition: all 0.2s ease;
   backdrop-filter: blur(2px);
   font-size: 14px;
+  position: relative;
+  overflow: hidden;
 }
 
 .chrome-memo-edit:hover,
@@ -110,19 +138,67 @@
   transform: scale(1.1);
 }
 
-/* 备忘录内容 */
+/* 按钮波纹效果 */
+.chrome-memo-edit::after,
+.chrome-memo-reset-position::after,
+.chrome-memo-minimize::after,
+.chrome-memo-close::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+.chrome-memo-edit:active::after,
+.chrome-memo-reset-position:active::after,
+.chrome-memo-minimize:active::after,
+.chrome-memo-close:active::after {
+  animation: ripple 0.4s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0) translate(-50%, -50%);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(20, 20) translate(-50%, -50%);
+    opacity: 0;
+  }
+}
+
+/* 备忘录内容区域 */
 .chrome-memo-content {
-  padding: 16px;
-  max-height: 300px;
+  padding: 18px;
+  max-height: 350px;
   overflow-y: auto;
   line-height: 1.6;
   color: #333;
   font-size: 14px;
   background-color: #fff;
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
   scrollbar-width: thin;
   scrollbar-color: #d4d4d4 #f1f1f1;
+  position: relative;
+}
+
+.chrome-memo-content:empty::before {
+  content: "点击编辑按钮添加备忘录内容...";
+  color: #aaa;
+  font-style: italic;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
 }
 
 .chrome-memo-content::-webkit-scrollbar {
@@ -130,14 +206,14 @@
 }
 
 .chrome-memo-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f8f8f8;
   border-radius: 3px;
 }
 
 .chrome-memo-content::-webkit-scrollbar-thumb {
   background-color: #d4d4d4;
   border-radius: 3px;
-  border: 2px solid #f1f1f1;
+  border: 2px solid #f8f8f8;
 }
 
 .chrome-memo-content::-webkit-scrollbar-thumb:hover {
@@ -148,9 +224,24 @@
 .chrome-memo-content h1,
 .chrome-memo-content h2,
 .chrome-memo-content h3 {
-  margin-top: 0.5em;
+  margin-top: 0.7em;
   margin-bottom: 0.5em;
   color: #2c3e50;
+  font-weight: 600;
+}
+
+.chrome-memo-content h1 {
+  font-size: 1.4em;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3em;
+}
+
+.chrome-memo-content h2 {
+  font-size: 1.25em;
+}
+
+.chrome-memo-content h3 {
+  font-size: 1.1em;
 }
 
 .chrome-memo-content p {
@@ -179,11 +270,35 @@
 }
 
 .chrome-memo-content blockquote {
-  border-left: 3px solid #4285f4;
+  border-left: 3px solid #8b5cf6;
   margin: 1em 0;
-  padding-left: 1em;
+  padding: 0.5em 0 0.5em 1em;
   color: #555;
-  font-style: italic;
+  background-color: #f9f9ff;
+  border-radius: 0 4px 4px 0;
+}
+
+.chrome-memo-content code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  background-color: #f5f5f5;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+  color: #e83e8c;
+}
+
+.chrome-memo-content pre {
+  background-color: #f8f8f8;
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.chrome-memo-content pre code {
+  background-color: transparent;
+  padding: 0;
+  color: #333;
 }
 
 /* 悬浮图标 */
@@ -643,4 +758,60 @@
   flex: 1;
   margin-left: 12px;
   line-height: 1.4;
+}
+
+/* 复制成功提示 */
+.copy-success {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 2147483647;
+}
+
+.copy-success.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-5px);
+}
+
+/* 特殊样式：快捷键按钮 */
+.shortcut-button {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.shortcut-button:hover {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.1);
+}
+
+.shortcut-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+.shortcut-button:active::after {
+  animation: ripple 0.4s ease-out;
 } 

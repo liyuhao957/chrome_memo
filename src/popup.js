@@ -38,6 +38,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       // 如果获取不到标签页信息
       if (!currentTab) {
         statusElement.innerHTML = '无法获取当前页面信息';
+        // 默认禁用导出按钮，直到确认有备忘录数据
+        exportDataBtn.disabled = true;
         return;
       }
       
@@ -52,6 +54,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
       console.error('初始化弹出窗口失败:', error);
       statusElement.innerHTML = '初始化失败，请重试';
+      // 默认禁用导出按钮
+      exportDataBtn.disabled = true;
       // 启用基本功能
       enableBasicFunctions();
     }
@@ -198,20 +202,27 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (sites.length === 0) {
         // 显示空列表提示
         emptyList.style.display = 'block';
-        return;
+        
+        // 禁用导出按钮
+        exportDataBtn.disabled = true;
+        exportDataBtn.title = '没有备忘录数据可导出';
+      } else {
+        // 隐藏空列表提示
+        emptyList.style.display = 'none';
+        
+        // 启用导出按钮
+        exportDataBtn.disabled = false;
+        exportDataBtn.title = '导出所有备忘录数据';
+        
+        // 按更新时间排序，最新的在前面
+        sites.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        
+        // 添加站点到列表
+        sites.forEach(site => {
+          const siteItem = createSiteItem(site);
+          siteList.appendChild(siteItem);
+        });
       }
-      
-      // 隐藏空列表提示
-      emptyList.style.display = 'none';
-      
-      // 按更新时间排序，最新的在前面
-      sites.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-      
-      // 添加站点到列表
-      sites.forEach(site => {
-        const item = createSiteItem(site);
-        siteList.appendChild(item);
-      });
     } catch (error) {
       console.error('加载站点列表失败:', error);
       showToast('加载站点列表失败', 'error');
@@ -450,14 +461,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   // 导出数据
   async function exportData() {
     try {
-      let exportedData;
+      // 获取所有备忘录
+      let memos = {};
       
-      // 尝试使用background.js中的函数
+      // 尝试获取备忘录数据
       try {
-        exportedData = await chrome.runtime.sendMessage({ action: 'exportData' });
-      } catch (error) {
-        // 如果background.js不可用，直接从storage获取数据
-        const memos = await new Promise((resolve, reject) => {
+        memos = await new Promise((resolve, reject) => {
           chrome.storage.sync.get('memos', (result) => {
             if (chrome.runtime.lastError) {
               reject(chrome.runtime.lastError);
@@ -466,7 +475,40 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
           });
         });
+      } catch (error) {
+        console.error('获取备忘录数据失败:', error);
+        showToast('获取备忘录数据失败', 'error');
+        return;
+      }
+      
+      // 检查备忘录是否为空
+      if (!memos || Object.keys(memos).length === 0) {
+        showToast('没有备忘录数据可导出', 'error');
+        return;
+      }
+      
+      let exportedData;
+      
+      // 尝试使用background.js中的函数
+      try {
+        const response = await chrome.runtime.sendMessage({ action: 'exportData' });
         
+        if (!response.success) {
+          throw new Error(response.error || '导出数据失败');
+        }
+        
+        exportedData = response.data;
+        
+        // 如果没有返回数据，使用本地数据
+        if (!exportedData) {
+          exportedData = {
+            memos,
+            exportedAt: new Date().toISOString(),
+            version: '1.0.0'
+          };
+        }
+      } catch (error) {
+        // 如果background.js不可用，直接从storage获取数据
         exportedData = {
           memos,
           exportedAt: new Date().toISOString(),
@@ -523,18 +565,27 @@ document.addEventListener('DOMContentLoaded', async function() {
           
           // 尝试使用background.js中的函数导入
           try {
-            await chrome.runtime.sendMessage({ 
+            const response = await chrome.runtime.sendMessage({ 
               action: 'importData', 
               data 
             });
+            
+            if (!response.success) {
+              throw new Error(response.error || '导入数据失败');
+            }
           } catch (error) {
+            console.error('通过background.js导入失败:', error);
             // 如果background.js不可用，直接保存到storage
             // 导入备忘录数据
-            chrome.storage.sync.set({ memos: data.memos }, () => {
-              if (chrome.runtime.lastError) {
-                console.error('导入备忘录失败:', chrome.runtime.lastError);
-                showToast('导入备忘录失败', 'error');
-              }
+            await new Promise((resolve, reject) => {
+              chrome.storage.sync.set({ memos: data.memos }, () => {
+                if (chrome.runtime.lastError) {
+                  console.error('导入备忘录失败:', chrome.runtime.lastError);
+                  reject(chrome.runtime.lastError);
+                } else {
+                  resolve();
+                }
+              });
             });
           }
           

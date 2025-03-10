@@ -239,6 +239,16 @@ button:disabled {
   box-shadow: 0 2px 5px rgba(124, 77, 255, 0.1);
 }
 
+/* 禁用的备份按钮 */
+.backup-btn:disabled {
+  background-color: #f5f5f5;
+  color: #aaa;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .backup-btn svg {
   width: 16px;
   height: 16px;

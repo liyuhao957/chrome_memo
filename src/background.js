@@ -214,6 +214,62 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ success: true });
     return true;
   }
+  
+  // 处理导出数据请求
+  if (message.action === 'exportData') {
+    try {
+      // 获取所有备忘录数据
+      chrome.storage.sync.get('memos', (result) => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        
+        const memos = result.memos || {};
+        
+        // 创建导出数据对象
+        const exportedData = {
+          memos,
+          exportedAt: new Date().toISOString(),
+          version: '1.0.0'
+        };
+        
+        sendResponse({ success: true, data: exportedData });
+      });
+    } catch (error) {
+      console.error('处理exportData请求时发生错误:', error);
+      sendResponse({ success: false, error: '导出数据失败' });
+    }
+    
+    return true; // 表示将异步发送响应
+  }
+  
+  // 处理导入数据请求
+  if (message.action === 'importData') {
+    try {
+      const { data } = message;
+      
+      if (!data || !data.memos) {
+        sendResponse({ success: false, error: '无效的数据格式' });
+        return true;
+      }
+      
+      // 保存备忘录数据
+      chrome.storage.sync.set({ memos: data.memos }, () => {
+        if (chrome.runtime.lastError) {
+          sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        
+        sendResponse({ success: true });
+      });
+    } catch (error) {
+      console.error('处理importData请求时发生错误:', error);
+      sendResponse({ success: false, error: '导入数据失败' });
+    }
+    
+    return true; // 表示将异步发送响应
+  }
 
   // 如果没有匹配的action，返回未知操作错误
   sendResponse({ success: false, error: '未知操作' });

@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const statusElement = document.getElementById('status');
   const toggleMemoBtn = document.getElementById('toggleMemoBtn');
   const openEditorBtn = document.getElementById('openEditorBtn');
+  const createOrEditBtn = document.getElementById('createOrEditBtn');
   const toggleSelectionBtn = document.getElementById('toggleSelectionBtn');
   const siteList = document.getElementById('siteList');
   const emptyList = document.getElementById('emptyList');
@@ -668,14 +669,44 @@ document.addEventListener('DOMContentLoaded', async function() {
     setTimeout(() => toast.classList.remove('show'), 3000);
   }
   
-  // 添加事件监听
-  toggleMemoBtn.addEventListener('click', toggleMemo);
-  openEditorBtn.addEventListener('click', openEditor);
-  toggleSelectionBtn.addEventListener('click', toggleSelectionFeature);
-  exportDataBtn.addEventListener('click', exportData);
-  importDataBtn.addEventListener('click', importData);
-  fileInput.addEventListener('change', handleFileSelect);
+  // 初始化事件监听
+  function setupEventListeners() {
+    toggleMemoBtn.addEventListener('click', toggleMemo);
+    openEditorBtn.addEventListener('click', openEditor);
+    createOrEditBtn.addEventListener('click', createOrEditMemo);
+    toggleSelectionBtn.addEventListener('click', toggleSelectionFeature);
+    exportDataBtn.addEventListener('click', exportData);
+    importDataBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', importData);
+  }
+  
+  // 创建或编辑备忘录（一键操作）
+  async function createOrEditMemo() {
+    try {
+      if (!currentTab) {
+        showToast('无法获取当前标签页信息', 'error');
+        return;
+      }
+      
+      // 先确保备忘录可见
+      await chrome.tabs.sendMessage(currentTab.id, {
+        action: 'showMemo'
+      });
+      
+      // 然后直接打开编辑器
+      await chrome.tabs.sendMessage(currentTab.id, {
+        action: 'openEditor'
+      });
+      
+      // 关闭弹出窗口
+      window.close();
+    } catch (error) {
+      console.error('创建或编辑备忘录失败:', error);
+      showToast('操作失败，请刷新页面后重试', 'error');
+    }
+  }
   
   // 初始化
   initPopup();
+  setupEventListeners();
 }); 

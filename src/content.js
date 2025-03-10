@@ -74,6 +74,14 @@ function handleMessages(message, sender, sendResponse) {
         sendResponse({ success: true });
         break;
         
+      case 'showMemo':
+        // 确保备忘录显示（如果已经显示则不做任何操作）
+        if (!window.memoComponent.isVisible) {
+          window.memoComponent.show();
+        }
+        sendResponse({ success: true });
+        break;
+        
       case 'openEditor':
         // 打开编辑器
         const content = window.memoComponent.memoContent ? window.memoComponent.memoContent.innerHTML : '';

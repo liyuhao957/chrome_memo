@@ -98,6 +98,7 @@ class MemoComponent {
     // 创建备忘录容器
     this.memoContainer = document.createElement('div');
     this.memoContainer.id = 'chrome-memo-container-' + Date.now();
+    this.memoContainer.className = 'chrome-memo-container';
     this.memoContainer.setAttribute('data-chrome-memo', 'true');
     
     // 设置容器样式
@@ -335,10 +336,12 @@ class MemoComponent {
     // 创建备忘录内部容器
     const memoInner = document.createElement('div');
     memoInner.className = 'memo-container';
+    memoInner.setAttribute('data-chrome-memo-inner', 'true');
     
     // 创建备忘录头部
     const header = document.createElement('div');
-    header.className = 'memo-header';
+    header.className = 'memo-header chrome-memo-header';
+    header.setAttribute('data-chrome-memo-header', 'true');
     
     // 网站指示器
     const siteIndicator = document.createElement('div');
@@ -424,8 +427,25 @@ class MemoComponent {
     
     // 创建备忘录内容区
     const content = document.createElement('div');
-    content.className = 'memo-content';
+    content.className = 'memo-content chrome-memo-content';
+    content.setAttribute('data-chrome-memo-content', 'true');
     content.innerHTML = memoData && memoData.content ? memoData.content : '';
+    
+    // 添加事件监听器，标记备忘录内部的选中文本
+    content.addEventListener('mouseup', (event) => {
+      // 将自定义属性添加到事件对象，标记这是备忘录内部的选中
+      event.isFromMemo = true;
+      
+      // 添加一个全局标记，表示当前选中文本来自备忘录
+      window.lastSelectionFromMemo = true;
+      
+      // 100毫秒后重置标记，避免影响其他操作
+      setTimeout(() => {
+        window.lastSelectionFromMemo = false;
+      }, 100);
+      
+      // 不阻止事件冒泡，让用户能够正常选中文本
+    });
     
     // 创建复制成功提示
     const copySuccess = document.createElement('div');
@@ -494,8 +514,24 @@ class MemoComponent {
     shadowRoot.appendChild(style);
     shadowRoot.appendChild(memoInner);
     
+    // 保存Shadow DOM根节点的引用
+    this.shadowRoot = shadowRoot;
+    
     // 添加到文档
     document.body.appendChild(this.memoContainer);
+    
+    // 为整个备忘录容器添加mouseup事件监听器
+    this.memoContainer.addEventListener('mouseup', (event) => {
+      // 标记这是备忘录内部的选中
+      window.lastSelectionFromMemo = true;
+      
+      // 100毫秒后重置标记
+      setTimeout(() => {
+        window.lastSelectionFromMemo = false;
+      }, 100);
+      
+      console.log('备忘录容器mouseup事件触发，设置全局标记');
+    });
     
     // 添加事件监听器
     shortcutButton.addEventListener('click', (event) => {
@@ -1223,12 +1259,32 @@ class MemoComponent {
    * @param {string} content - 新的备忘录内容
    */
   async updateContent(content) {
-    if (!this.memoContent) return;
+    if (!this.memoContent) {
+      console.warn('无法更新备忘录内容: memoContent元素不存在');
+      return;
+    }
     
-    this.memoContent.innerHTML = content;
+    console.log('更新备忘录内容:', content ? '内容长度 ' + content.length : '内容为空');
     
-    // 保存更新后的内容
-    await window.memoManager.saveMemo(content);
+    try {
+      // 更新DOM内容
+      this.memoContent.innerHTML = content;
+      console.log('DOM内容已更新');
+      
+      // 保存更新后的内容
+      const result = await window.memoManager.saveMemo(content);
+      console.log('内容已保存到存储:', result ? '成功' : '失败');
+      
+      // 确保备忘录可见
+      if (!this.isVisible) {
+        console.log('备忘录内容已更新，显示备忘录');
+        await this.show();
+      } else {
+        console.log('备忘录内容已更新，备忘录已显示');
+      }
+    } catch (error) {
+      console.error('更新备忘录内容时出错:', error);
+    }
   }
   
   /**

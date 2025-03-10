@@ -50,10 +50,43 @@ async function initializeMemo() {
       return;
     }
     
-    window.selectionUtils.initialize(async (selectedText) => {
-      await window.memoManager.addSelectionToMemo(selectedText);
-      await window.memoComponent.initialize(openEditor);
-    });
+    // 定义选中文本处理回调函数
+    const handleSelectedText = async (selectedText) => {
+      try {
+        console.log('选中文本回调被触发，准备添加文本到备忘录:', selectedText.substring(0, 20) + (selectedText.length > 20 ? '...' : ''));
+        
+        if (!window.memoManager) {
+          console.error('MemoManager未初始化，无法添加选中文本');
+          return;
+        }
+        
+        // 添加选中文本到备忘录
+        const result = await window.memoManager.addSelectionToMemo(selectedText);
+        console.log('选中文本已添加到备忘录，结果:', result ? '成功' : '失败');
+        
+        if (!window.memoComponent) {
+          console.error('MemoComponent未初始化，无法显示备忘录');
+          return;
+        }
+        
+        // 确保备忘录显示
+        if (!window.memoComponent.isVisible) {
+          console.log('备忘录当前不可见，显示备忘录');
+          await window.memoComponent.show();
+        } else {
+          console.log('备忘录已显示，更新内容');
+          // 重新初始化备忘录以更新内容
+          await window.memoComponent.initialize(openEditor);
+        }
+        
+        console.log('选中文本已成功添加到备忘录');
+      } catch (error) {
+        console.error('添加选中文本到备忘录时出错:', error);
+      }
+    };
+
+    // 初始化选中文本工具
+    window.selectionUtils.initialize(handleSelectedText);
     
     // 监听消息
     chrome.runtime.onMessage.addListener(handleMessages);

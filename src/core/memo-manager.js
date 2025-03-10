@@ -116,20 +116,41 @@ class MemoManager {
    * @returns {Promise<Object>} - 更新后的备忘录数据
    */
   async addSelectionToMemo(selectedText) {
-    if (!selectedText) return null;
-    
-    const memo = await this.loadCurrentMemo();
-    let content = '';
-    
-    if (memo && memo.content) {
-      // 如果已有内容，在末尾添加选中内容
-      content = memo.content + '\n\n' + selectedText;
-    } else {
-      // 创建新备忘录
-      content = selectedText;
+    if (!selectedText) {
+      console.warn('添加选中文本失败: 文本为空');
+      return null;
     }
     
-    return await this.saveMemo(content);
+    console.log('MemoManager: 添加选中文本到备忘录:', selectedText.substring(0, 20) + (selectedText.length > 20 ? '...' : ''));
+    
+    try {
+      const domain = this.getCurrentDomain();
+      console.log('当前域名:', domain);
+      
+      const memo = await this.loadCurrentMemo();
+      console.log('当前备忘录状态:', memo ? '已存在' : '不存在');
+      
+      let content = '';
+      
+      if (memo && memo.content) {
+        // 如果已有内容，在末尾添加选中内容
+        content = memo.content + '\n\n' + selectedText;
+        console.log('向现有备忘录添加内容');
+      } else {
+        // 创建新备忘录
+        content = selectedText;
+        console.log('创建新备忘录');
+      }
+      
+      // 保存备忘录，并确保可见
+      const result = await this.saveMemo(content, { isVisible: true });
+      console.log('备忘录保存结果:', result ? '成功' : '失败');
+      
+      return result;
+    } catch (error) {
+      console.error('添加选中文本到备忘录时出错:', error);
+      throw error;
+    }
   }
   
   /**

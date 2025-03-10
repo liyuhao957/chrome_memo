@@ -504,48 +504,86 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // 切换选中文本添加功能
   async function toggleSelectionFeature() {
-    isSelectionEnabled = !isSelectionEnabled;
-    
     try {
-      if (!currentTab) {
+      const tab = await getCurrentTab();
+      if (!tab) {
+        console.error('无法获取当前标签页');
         showToast('无法获取当前标签页信息', 'error');
         return;
       }
       
-      await chrome.tabs.sendMessage(currentTab.id, {
-        action: 'toggleSelection',
-        enabled: isSelectionEnabled
-      });
-      
-      updateSelectionButtonText();
-      showToast(isSelectionEnabled ? '已开启选中文本添加功能' : '已关闭选中文本添加功能');
-    } catch (error) {
-      console.error('切换选中文本添加功能失败:', error);
-      showToast('操作失败，请刷新页面后重试', 'error');
-      // 恢复状态
-      isSelectionEnabled = !isSelectionEnabled;
-      updateSelectionButtonText();
-    }
-  }
-  
-  // 检查选中文本添加功能状态
-  async function checkSelectionFeatureStatus() {
-    try {
-      if (!currentTab) {
-        console.warn('无法获取当前标签页信息');
-        return;
-      }
-      
-      const response = await chrome.tabs.sendMessage(currentTab.id, {
+      // 获取当前状态
+      const response = await chrome.tabs.sendMessage(tab.id, {
         action: 'getSelectionStatus'
       });
       
-      isSelectionEnabled = response && response.enabled;
-      updateSelectionButtonText();
+      // 切换状态
+      const newStatus = !response.enabled;
+      console.log('切换选中文本功能状态为:', newStatus);
+      
+      // 发送消息到内容脚本
+      const toggleResponse = await chrome.tabs.sendMessage(tab.id, {
+        action: 'toggleSelection',
+        enabled: newStatus
+      });
+      
+      if (toggleResponse.success) {
+        // 保存状态到本地存储
+        chrome.storage.local.set({ selectionFeatureEnabled: newStatus });
+        
+        // 更新按钮文本
+        isSelectionEnabled = newStatus;
+        updateSelectionButtonText();
+        
+        // 显示提示
+        showToast(`已${newStatus ? '开启' : '关闭'}选中文本添加功能`, 'success');
+      }
     } catch (error) {
-      console.error('获取选中文本功能状态失败:', error);
+      console.error('切换选中文本功能失败:', error);
+      showToast('切换选中文本功能失败，请刷新页面后重试', 'error');
+    }
+  }
+  
+  // 检查选中文本功能状态
+  async function checkSelectionFeatureStatus() {
+    try {
+      // 首先从存储中获取状态
+      const storageData = await new Promise(resolve => {
+        chrome.storage.local.get('selectionFeatureEnabled', resolve);
+      });
+      
+      let enabled = storageData.selectionFeatureEnabled === true;
+      
+      // 尝试从当前标签页获取实际状态
+      try {
+        if (currentTab) {
+          const response = await chrome.tabs.sendMessage(currentTab.id, {
+            action: 'getSelectionStatus'
+          });
+          
+          if (response && response.success) {
+            enabled = response.enabled;
+            
+            // 如果存储状态与实际状态不一致，更新存储
+            if (storageData.selectionFeatureEnabled !== enabled) {
+              chrome.storage.local.set({ selectionFeatureEnabled: enabled });
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('无法从内容脚本获取选中文本功能状态，使用存储状态:', error);
+      }
+      
+      // 更新全局状态和按钮文本
+      isSelectionEnabled = enabled;
+      updateSelectionButtonText();
+      
+      return enabled;
+    } catch (error) {
+      console.error('检查选中文本功能状态失败:', error);
       isSelectionEnabled = false;
       updateSelectionButtonText();
+      return false;
     }
   }
   

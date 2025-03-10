@@ -612,29 +612,55 @@
   background-color: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   border-radius: 4px;
-  z-index: 2147483646;
+  z-index: 2147483647 !important;
   transform: translate(-50%, -100%);
+  padding: 5px;
+  pointer-events: auto !important;
+  animation: fadeIn 0.2s ease-in-out;
+  margin-top: -10px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 14px !important;
+  line-height: normal !important;
+  text-align: center !important;
+  min-width: 120px !important;
+  max-width: 200px !important;
 }
 
 .add-to-memo-btn {
-  background-color: #7c4dff;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  font-size: 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.2s;
+  background-color: #4a6cf7 !important;
+  color: white !important;
+  border: none !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all 0.2s !important;
+  font-weight: 500 !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  display: inline-block !important;
+  text-decoration: none !important;
+  outline: none !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  text-transform: none !important;
 }
 
 .add-to-memo-btn:before {
-  content: '+';
-  margin-right: 4px;
+  content: '+' !important;
+  margin-right: 4px !important;
+  display: inline !important;
 }
 
 .add-to-memo-btn:hover {
-  background-color: #6a3de8;
+  background-color: #3a5ce5 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* 提示消息 */
@@ -648,15 +674,15 @@
   padding: 8px 16px;
   border-radius: 4px;
   font-size: 14px;
-  opacity: 0;
-  transition: all 0.3s ease;
   z-index: 2147483647;
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
   pointer-events: none;
 }
 
 .chrome-memo-toast.show {
-  opacity: 1;
   transform: translateX(-50%) translateY(0);
+  opacity: 1;
 }
 
 .chrome-memo-toast.error {
@@ -664,7 +690,7 @@
 }
 
 .chrome-memo-toast.success {
-  background-color: #4caf50;
+  background-color: rgba(40, 167, 69, 0.85);
 }
 
 /* 位置重置动画 */

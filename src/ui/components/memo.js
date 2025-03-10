@@ -155,33 +155,67 @@ class MemoComponent {
       
       .header-actions {
         display: flex;
-        gap: 8px;
+        gap: 4px;
       }
       
       .header-button {
-        background: transparent;
+        background: none;
         border: none;
         color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        padding: 2px;
+        padding: 0;
+        transition: background-color 0.2s;
       }
       
       .header-button:hover {
-        opacity: 0.8;
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+      
+      .memo-content {
+        padding: 12px;
+        min-height: 40px;
+        max-height: 300px;
+        overflow-y: auto;
+        color: #333;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      
+      .memo-content::-webkit-scrollbar {
+        width: 6px;
+      }
+      
+      .memo-content::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      
+      .memo-content::-webkit-scrollbar-thumb {
+        background: #ddd;
+        border-radius: 3px;
+      }
+      
+      .memo-content::-webkit-scrollbar-thumb:hover {
+        background: #ccc;
       }
       
       .copy-success {
         position: absolute;
-        top: 50%;
+        bottom: 10px;
         left: 50%;
-        transform: translate(-50%, -50%);
+        transform: translateX(-50%);
         background-color: rgba(0, 0, 0, 0.7);
         color: white;
-        padding: 8px 12px;
+        padding: 6px 12px;
         border-radius: 4px;
-        font-size: 14px;
+        font-size: 12px;
         opacity: 0;
-        transition: opacity 0.3s ease;
+        transition: opacity 0.3s;
         pointer-events: none;
       }
       
@@ -189,13 +223,97 @@ class MemoComponent {
         opacity: 1;
       }
       
-      .memo-content {
-        padding: 10px;
+      /* 快捷键提示框样式 */
+      .shortcut-tooltip-container {
+        position: relative;
+        z-index: 2147483647;
+        pointer-events: none;
+      }
+      
+      .shortcut-tooltip {
+        position: absolute;
+        width: 280px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 2147483647;
+        overflow: hidden;
+        animation: fadeIn 0.3s ease;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        pointer-events: auto;
+      }
+      
+      /* 特殊样式：快捷键按钮 */
+      .shortcut-button {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        width: 24px !important;
+        height: 24px !important;
+        border-radius: 4px !important;
+      }
+      
+      .shortcut-button:hover {
+        background-color: rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      
+      .shortcut-tooltip-header {
+        padding: 12px 16px;
+        background: linear-gradient(135deg, #6e8efb, #7c4dff);
+        color: white;
+        font-weight: 600;
+        font-size: 15px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        text-align: center;
+        letter-spacing: 0.5px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      }
+      
+      .shortcut-tooltip-content {
+        padding: 16px;
         max-height: 300px;
         overflow-y: auto;
-        background-color: #fff;
+      }
+      
+      .shortcut-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      
+      .shortcut-item:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+      
+      .shortcut-key {
+        background-color: #f5f5f5;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 13px;
+        color: #333;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        font-weight: 500;
+        min-width: 80px;
+        text-align: center;
+      }
+      
+      .shortcut-desc {
+        color: #444;
         font-size: 14px;
-        line-height: 1.5;
+        flex: 1;
+        margin-left: 12px;
+        line-height: 1.4;
       }
     `;
     
@@ -215,6 +333,25 @@ class MemoComponent {
     // 头部操作区
     const headerActions = document.createElement('div');
     headerActions.className = 'header-actions';
+    
+    // 快捷键按钮
+    const shortcutButton = document.createElement('button');
+    shortcutButton.className = 'header-button shortcut-button';
+    shortcutButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    `;
+    shortcutButton.title = '查看快捷键';
+    shortcutButton.style.width = '24px';
+    shortcutButton.style.height = '24px';
+    shortcutButton.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+    shortcutButton.style.borderRadius = '4px';
+    shortcutButton.style.cursor = 'pointer';
+    shortcutButton.style.display = 'flex';
+    shortcutButton.style.alignItems = 'center';
+    shortcutButton.style.justifyContent = 'center';
     
     // 复制按钮
     const copyButton = document.createElement('button');
@@ -280,10 +417,33 @@ class MemoComponent {
     copySuccess.className = 'copy-success';
     copySuccess.textContent = '复制成功！';
     
+    // 创建快捷键提示框
+    const shortcutTooltip = document.createElement('div');
+    shortcutTooltip.className = 'shortcut-tooltip';
+    shortcutTooltip.innerHTML = `
+      <div class="shortcut-tooltip-header">快捷键</div>
+      <div class="shortcut-tooltip-content">
+        <div class="shortcut-item">
+          <span class="shortcut-key">${navigator.platform.indexOf('Mac') > -1 ? 'Option+M' : 'Alt+M'}</span>
+          <span class="shortcut-desc">显示/隐藏备忘录</span>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-key">${navigator.platform.indexOf('Mac') > -1 ? 'Option+E' : 'Alt+E'}</span>
+          <span class="shortcut-desc">打开备忘录编辑器</span>
+        </div>
+        <div class="shortcut-item">
+          <span class="shortcut-key">${navigator.platform.indexOf('Mac') > -1 ? 'Option+Q' : 'Alt+Q'}</span>
+          <span class="shortcut-desc">开启/关闭选中文本添加</span>
+        </div>
+      </div>
+    `;
+    shortcutTooltip.style.display = 'none';
+    
     // 保存内容元素的引用
     this.memoContent = content;
     
     // 添加按钮到头部操作区
+    headerActions.appendChild(shortcutButton);
     headerActions.appendChild(copyButton);
     headerActions.appendChild(editButton);
     headerActions.appendChild(resetPositionButton);
@@ -299,6 +459,22 @@ class MemoComponent {
     memoInner.appendChild(content);
     memoInner.appendChild(copySuccess);
     
+    // 创建快捷键提示框容器
+    const shortcutTooltipContainer = document.createElement('div');
+    shortcutTooltipContainer.className = 'shortcut-tooltip-container';
+    shortcutTooltipContainer.style.position = 'absolute';
+    shortcutTooltipContainer.style.top = '0';
+    shortcutTooltipContainer.style.left = '0';
+    shortcutTooltipContainer.style.width = '100%';
+    shortcutTooltipContainer.style.height = '100%';
+    shortcutTooltipContainer.style.pointerEvents = 'none'; // 避免阻挡其他元素的点击
+    shortcutTooltipContainer.appendChild(shortcutTooltip);
+    
+    // 确保提示框可以接收点击事件
+    shortcutTooltip.style.pointerEvents = 'auto';
+    
+    memoInner.appendChild(shortcutTooltipContainer);
+    
     // 将样式和内部容器添加到Shadow DOM
     shadowRoot.appendChild(style);
     shadowRoot.appendChild(memoInner);
@@ -307,6 +483,81 @@ class MemoComponent {
     document.body.appendChild(this.memoContainer);
     
     // 添加事件监听器
+    shortcutButton.addEventListener('click', (event) => {
+      // 阻止事件冒泡，避免触发其他点击事件
+      event.stopPropagation();
+      
+      console.log('快捷键按钮被点击'); // 添加调试日志
+      
+      // 切换快捷键提示框的显示状态
+      const isHidden = shortcutTooltip.style.display === 'none' || !shortcutTooltip.style.display;
+      
+      if (isHidden) {
+        // 显示提示框
+        shortcutTooltip.style.display = 'block';
+        
+        // 定位提示框 - 默认显示在备忘录的右侧
+        shortcutTooltip.style.top = '0';
+        shortcutTooltip.style.left = '100%';
+        shortcutTooltip.style.right = 'auto';
+        shortcutTooltip.style.marginLeft = '10px';
+        
+        // 获取提示框的位置和尺寸
+        setTimeout(() => {
+          try {
+            const tooltipRect = shortcutTooltip.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // 检查右侧是否有足够空间
+            if (tooltipRect.right > viewportWidth) {
+              // 如果右侧空间不足，显示在左侧
+              shortcutTooltip.style.left = 'auto';
+              shortcutTooltip.style.right = '100%';
+              shortcutTooltip.style.marginLeft = '0';
+              shortcutTooltip.style.marginRight = '10px';
+            }
+            
+            // 检查底部是否有足够空间
+            if (tooltipRect.bottom > viewportHeight) {
+              // 如果底部空间不足，向上调整
+              const overflowY = tooltipRect.bottom - viewportHeight;
+              shortcutTooltip.style.top = `-${overflowY}px`;
+            }
+          } catch (error) {
+            console.error('调整快捷键提示框位置时出错:', error);
+          }
+        }, 10);
+        
+        // 点击其他区域关闭提示框
+        const closeTooltipOnClickOutside = (e) => {
+          // 检查点击的元素是否在Shadow DOM内
+          const path = e.composedPath ? e.composedPath() : e.path;
+          const isOutside = !path.includes(shortcutTooltip) && !path.includes(shortcutButton);
+          
+          if (isOutside) {
+            shortcutTooltip.style.display = 'none';
+            document.removeEventListener('click', closeTooltipOnClickOutside);
+          }
+        };
+        
+        // 延迟添加事件监听器，避免立即触发
+        setTimeout(() => {
+          document.addEventListener('click', closeTooltipOnClickOutside);
+        }, 100);
+        
+        // 10秒后自动隐藏
+        setTimeout(() => {
+          if (shortcutTooltip.style.display === 'block') {
+            shortcutTooltip.style.display = 'none';
+            document.removeEventListener('click', closeTooltipOnClickOutside);
+          }
+        }, 10000);
+      } else {
+        shortcutTooltip.style.display = 'none';
+      }
+    }, true); // 添加捕获阶段参数，确保事件被捕获
+    
     copyButton.addEventListener('click', () => {
       this.copyMemoContent();
       

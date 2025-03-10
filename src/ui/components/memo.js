@@ -171,7 +171,17 @@ class MemoComponent {
     document.body.appendChild(this.floatingIcon);
     
     // 使悬浮图标可拖拽
-    window.dragUtils.makeDraggable(this.floatingIcon);
+    this.floatingIconDragHelper = window.dragUtils.makeDraggable(
+      this.floatingIcon,
+      this.floatingIcon,
+      async (position) => {
+        // 保存悬浮图标位置
+        await window.memoManager.updateFloatingIconPosition(position);
+      }
+    );
+    
+    // 设置初始位置为右下角
+    this.floatingIconDragHelper.setPosition(null);
   }
   
   /**
@@ -214,6 +224,11 @@ class MemoComponent {
     this.floatingIcon.style.display = 'flex';
     this.isMinimized = true;
     this.isVisible = true;
+    
+    // 恢复悬浮图标位置
+    if (this.floatingIconDragHelper) {
+      this.floatingIconDragHelper.setPosition(null);
+    }
   }
   
   /**
@@ -264,21 +279,20 @@ class MemoComponent {
     );
     
     // 设置初始位置
-    if (initialPosition) {
-      this.dragHelper.setPosition(initialPosition);
-    }
+    this.dragHelper.setPosition(initialPosition);
   }
   
   /**
    * 重置备忘录位置
    */
   async resetPosition() {
-    const defaultPosition = { x: 20, y: 20 };
-    
-    window.dragUtils.resetPosition(this.memoContainer, defaultPosition, async () => {
-      // 保存新位置到存储
-      await window.memoManager.updateMemoPosition(defaultPosition);
-    });
+    if (this.memoContainer && this.dragHelper) {
+      // 使用dragHelper的setPosition方法，传入null表示使用CSS定位
+      this.dragHelper.setPosition(null);
+      
+      // 保存位置为null，表示使用CSS默认位置
+      await window.memoManager.updateMemoPosition(null);
+    }
   }
   
   /**

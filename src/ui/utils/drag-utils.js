@@ -74,12 +74,18 @@ class DragUtils {
         return;
       }
       
-      // 确保使用绝对定位
+      // 确保使用绝对定位，清除CSS定位
       element.style.position = 'absolute';
+      element.style.bottom = '';
+      element.style.right = '';
       
-      // 如果元素是编辑器，标记它为已拖拽状态
-      if (element.classList.contains('chrome-memo-editor-container')) {
-        element.classList.add('has-been-dragged');
+      // 获取当前位置
+      const rect = element.getBoundingClientRect();
+      
+      // 如果之前没有设置过transform，初始化偏移量
+      if (!element.style.transform || element.style.transform === 'none') {
+        xOffset = rect.left;
+        yOffset = rect.top;
       }
       
       initialX = e.clientX - xOffset;
@@ -132,9 +138,26 @@ class DragUtils {
       },
       setPosition: (position) => {
         if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+          // 清除CSS定位样式
+          element.style.bottom = '';
+          element.style.right = '';
+          element.style.position = 'absolute';
+          
           xOffset = position.x;
           yOffset = position.y;
           setTranslate(position.x, position.y);
+        } else if (position === null) {
+          // 如果位置为null，使用CSS定位（右下角）
+          element.style.transform = '';
+          element.style.position = 'fixed';
+          element.style.top = '';
+          element.style.left = '';
+          element.style.bottom = '20px';
+          element.style.right = '20px';
+          
+          // 重置偏移量
+          xOffset = 0;
+          yOffset = 0;
         }
       }
     };

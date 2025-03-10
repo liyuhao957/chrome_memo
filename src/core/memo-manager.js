@@ -33,10 +33,18 @@ class MemoManager {
     const domain = this.getCurrentDomain();
     const currentMemo = await this.loadCurrentMemo() || {};
     
+    // 获取右下角默认位置
+    const getRightBottomPosition = () => {
+      // 使用视口宽高计算右下角位置
+      // 注意：这里不直接使用视口宽高，因为在content script中可能无法准确获取
+      // 而是使用CSS的right/bottom属性来定位，返回null表示使用CSS定位
+      return null;
+    };
+    
     // 合并当前数据和新数据
     const memoData = {
       content,
-      position: options.position || currentMemo.position || { x: 20, y: 20 },
+      position: options.position || currentMemo.position || getRightBottomPosition(),
       isVisible: options.isVisible !== undefined ? options.isVisible : (currentMemo.isVisible || true),
       createdAt: currentMemo.createdAt || new Date().toISOString(),
       url: window.location.href,
@@ -57,6 +65,28 @@ class MemoManager {
     
     memo.position = position;
     return await window.storageManager.saveMemo(this.getCurrentDomain(), memo);
+  }
+  
+  /**
+   * 更新悬浮图标位置
+   * @param {Object} position - 新位置 {x, y}
+   * @returns {Promise<Object>} - 更新后的备忘录数据
+   */
+  async updateFloatingIconPosition(position) {
+    const memo = await this.loadCurrentMemo();
+    if (!memo) return null;
+    
+    memo.floatingIconPosition = position;
+    return await window.storageManager.saveMemo(this.getCurrentDomain(), memo);
+  }
+  
+  /**
+   * 获取悬浮图标位置
+   * @returns {Promise<Object>} - 悬浮图标位置 {x, y}
+   */
+  async getFloatingIconPosition() {
+    const memo = await this.loadCurrentMemo();
+    return memo ? memo.floatingIconPosition : null;
   }
   
   /**

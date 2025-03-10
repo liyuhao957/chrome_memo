@@ -494,8 +494,38 @@ class MemoComponent {
     shadowRoot.appendChild(style);
     shadowRoot.appendChild(iconInner);
     
+    // 添加拖拽状态跟踪
+    let isDragging = false;
+    let dragStartTime = 0;
+    
     // 添加点击事件
-    iconInner.addEventListener('click', () => {
+    iconInner.addEventListener('mousedown', (e) => {
+      // 记录拖拽开始时间
+      dragStartTime = Date.now();
+      isDragging = false;
+    });
+    
+    iconInner.addEventListener('mousemove', (e) => {
+      // 如果鼠标移动，标记为拖拽状态
+      if (dragStartTime > 0 && Date.now() - dragStartTime > 100) {
+        isDragging = true;
+      }
+    });
+    
+    iconInner.addEventListener('click', (e) => {
+      // 检查是否是真正的拖拽
+      const wasDragging = this.floatingIcon.getAttribute('data-dragging') === 'true' || 
+                         this.floatingIcon.getAttribute('data-just-dragged') === 'true' ||
+                         isDragging || 
+                         (Date.now() - dragStartTime > 300);
+      
+      // 如果是拖拽结束，不触发点击事件
+      if (wasDragging) {
+        e.stopPropagation();
+        return;
+      }
+      
+      // 如果是真正的点击，恢复备忘录
       this.restore();
     });
     
@@ -507,6 +537,9 @@ class MemoComponent {
       this.floatingIcon,
       iconInner,
       async (position) => {
+        // 标记为拖拽状态
+        isDragging = true;
+        
         // 保存悬浮图标位置
         await window.memoManager.updateFloatingIconPosition(position);
       }

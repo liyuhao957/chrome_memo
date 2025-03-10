@@ -98,6 +98,9 @@ class DragUtils {
         return;
       }
       
+      // 设置自定义属性，标记为可能的拖拽开始
+      element.setAttribute('data-dragging-possible', 'true');
+      
       // 阻止事件冒泡和默认行为
       e.preventDefault();
       e.stopPropagation();
@@ -130,6 +133,12 @@ class DragUtils {
       // 计算新位置
       const deltaX = e.clientX - startX;
       const deltaY = e.clientY - startY;
+      
+      // 如果移动距离超过阈值，标记为真正的拖拽
+      if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+        element.setAttribute('data-dragging', 'true');
+      }
+      
       const newX = elementX + deltaX;
       const newY = elementY + deltaY;
       
@@ -147,8 +156,28 @@ class DragUtils {
         e.stopPropagation();
       }
       
+      // 检查是否是真正的拖拽
+      const wasDragging = element.getAttribute('data-dragging') === 'true';
+      
       // 标记为非拖动状态
       isDragging = false;
+      
+      // 清除拖拽标记
+      element.removeAttribute('data-dragging-possible');
+      
+      // 添加一个延迟，防止拖拽结束后立即触发点击事件
+      if (wasDragging) {
+        // 设置一个临时标记，表示刚刚结束拖拽
+        element.setAttribute('data-just-dragged', 'true');
+        
+        // 300毫秒后清除标记
+        setTimeout(() => {
+          element.removeAttribute('data-dragging');
+          element.removeAttribute('data-just-dragged');
+        }, 300);
+      } else {
+        element.removeAttribute('data-dragging');
+      }
       
       // 获取最终位置
       const rect = element.getBoundingClientRect();
@@ -159,7 +188,7 @@ class DragUtils {
       document.removeEventListener('mouseup', handleMouseUp);
       
       // 调用拖拽结束回调
-      if (onDragEnd && typeof onDragEnd === 'function') {
+      if (wasDragging && onDragEnd && typeof onDragEnd === 'function') {
         onDragEnd(finalPosition);
       }
     };

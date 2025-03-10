@@ -21,21 +21,31 @@ class MemoComponent {
   async initialize(onEditClick) {
     this.onEditClick = onEditClick;
     
-    // 加载当前网站的备忘录数据
-    const memo = await window.memoManager.loadCurrentMemo();
-    
-    // 创建备忘录UI
-    this.createMemoUI(memo);
-    
-    // 如果有数据且设置为可见，则显示备忘录
-    if (memo && memo.isVisible) {
-      this.show();
+    try {
+      // 加载备忘录数据
+      const memoData = await window.memoManager.loadCurrentMemo();
+      
+      // 创建备忘录UI
+      this.createMemoUI(memoData);
+      
+      // 创建悬浮图标
+      await this.createFloatingIcon();
+      
+      // 设置可见性观察器
+      this.setupVisibilityObserver();
+      
+      // 如果有保存的可见状态，恢复它
+      if (memoData && memoData.isVisible) {
+        this.show();
+      } else {
+        this.hide();
+      }
+      
+      return this;
+    } catch (error) {
+      console.error('初始化备忘录组件失败:', error);
+      throw error;
     }
-    
-    // 添加可见性监视器，确保备忘录不会意外消失
-    this.setupVisibilityObserver();
-    
-    return this;
   }
   
   /**
@@ -327,9 +337,6 @@ class MemoComponent {
     
     // 使备忘录可拖拽
     this.makeDraggable(header, memoData ? memoData.position : null);
-    
-    // 创建悬浮图标
-    this.createFloatingIcon();
   }
   
   /**
@@ -396,7 +403,7 @@ class MemoComponent {
   /**
    * 创建悬浮图标
    */
-  createFloatingIcon() {
+  async createFloatingIcon() {
     if (this.floatingIcon) {
       document.body.removeChild(this.floatingIcon);
     }
@@ -544,6 +551,49 @@ class MemoComponent {
         await window.memoManager.updateFloatingIconPosition(position);
       }
     );
+    
+    // 尝试恢复保存的悬浮图标位置
+    try {
+      const savedPosition = await window.memoManager.getFloatingIconPosition();
+      if (savedPosition && this.floatingIconDragHelper) {
+        // 确保位置在视口内
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // 获取悬浮图标的尺寸
+        this.floatingIcon.style.display = 'flex'; // 临时显示以获取尺寸
+        const iconRect = this.floatingIcon.getBoundingClientRect();
+        this.floatingIcon.style.display = 'none'; // 恢复隐藏状态
+        
+        let newX = savedPosition.x;
+        let newY = savedPosition.y;
+        
+        // 确保悬浮图标不会超出右边界
+        if (newX + iconRect.width > viewportWidth) {
+          newX = viewportWidth - iconRect.width - 20;
+        }
+        
+        // 确保悬浮图标不会超出下边界
+        if (newY + iconRect.height > viewportHeight) {
+          newY = viewportHeight - iconRect.height - 20;
+        }
+        
+        // 确保悬浮图标不会超出左边界
+        if (newX < 0) {
+          newX = 20;
+        }
+        
+        // 确保悬浮图标不会超出上边界
+        if (newY < 0) {
+          newY = 20;
+        }
+        
+        // 设置悬浮图标位置
+        this.floatingIconDragHelper.setPosition({ x: newX, y: newY });
+      }
+    } catch (error) {
+      console.error('恢复悬浮图标位置失败:', error);
+    }
   }
   
   /**
@@ -628,14 +678,52 @@ class MemoComponent {
   minimize() {
     if (!this.memoContainer) return;
     
+    // 获取备忘录当前位置
+    const memoRect = this.memoContainer.getBoundingClientRect();
+    
     this.memoContainer.style.display = 'none';
     this.floatingIcon.style.display = 'flex';
     this.isMinimized = true;
     this.isVisible = true;
     
-    // 恢复悬浮图标位置
-    if (this.floatingIconDragHelper) {
-      this.floatingIconDragHelper.setPosition(null);
+    // 设置悬浮图标位置为备忘录的位置
+    if (this.floatingIconDragHelper && memoRect) {
+      // 计算悬浮图标的位置，使其位于备忘录的位置
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // 获取悬浮图标的尺寸
+      const iconRect = this.floatingIcon.getBoundingClientRect();
+      
+      // 计算悬浮图标的新位置
+      let newX = memoRect.left;
+      let newY = memoRect.top;
+      
+      // 确保悬浮图标不会超出右边界
+      if (newX + iconRect.width > viewportWidth) {
+        newX = viewportWidth - iconRect.width - 20; // 20px的边距
+      }
+      
+      // 确保悬浮图标不会超出下边界
+      if (newY + iconRect.height > viewportHeight) {
+        newY = viewportHeight - iconRect.height - 20; // 20px的边距
+      }
+      
+      // 确保悬浮图标不会超出左边界
+      if (newX < 0) {
+        newX = 20; // 20px的边距
+      }
+      
+      // 确保悬浮图标不会超出上边界
+      if (newY < 0) {
+        newY = 20; // 20px的边距
+      }
+      
+      // 设置悬浮图标的新位置
+      this.floatingIconDragHelper.setPosition({ x: newX, y: newY });
+      
+      // 保存悬浮图标位置
+      window.memoManager.updateFloatingIconPosition({ x: newX, y: newY });
     }
   }
   
@@ -645,10 +733,56 @@ class MemoComponent {
   restore() {
     if (!this.memoContainer || !this.isMinimized) return;
     
+    // 获取悬浮图标的位置
+    const floatingIconRect = this.floatingIcon.getBoundingClientRect();
+    
     // 显示备忘录
     this.memoContainer.style.display = 'block';
     this.floatingIcon.style.display = 'none';
     this.isMinimized = false;
+    
+    // 根据悬浮图标的位置设置备忘录的位置
+    if (this.dragHelper && floatingIconRect) {
+      // 计算备忘录的新位置，使其左上角与悬浮图标的位置对齐
+      // 但要确保备忘录完全在视口内
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // 获取备忘录的尺寸
+      const memoRect = this.memoContainer.getBoundingClientRect();
+      
+      // 计算备忘录的新位置
+      let newX = floatingIconRect.left;
+      let newY = floatingIconRect.top;
+      
+      // 确保备忘录不会超出右边界
+      if (newX + memoRect.width > viewportWidth) {
+        newX = viewportWidth - memoRect.width - 20; // 20px的边距
+      }
+      
+      // 确保备忘录不会超出下边界
+      if (newY + memoRect.height > viewportHeight) {
+        newY = viewportHeight - memoRect.height - 20; // 20px的边距
+      }
+      
+      // 确保备忘录不会超出左边界
+      if (newX < 0) {
+        newX = 20; // 20px的边距
+      }
+      
+      // 确保备忘录不会超出上边界
+      if (newY < 0) {
+        newY = 20; // 20px的边距
+      }
+      
+      // 设置备忘录的新位置
+      this.dragHelper.setPosition({ x: newX, y: newY });
+      
+      // 保存新位置
+      window.memoManager.updateMemoPosition({ x: newX, y: newY });
+      
+      return; // 已经设置了位置，不需要继续执行
+    }
     
     // 检查备忘录是否在视口内，如果不在则重置位置
     const rect = this.memoContainer.getBoundingClientRect();

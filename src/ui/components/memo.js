@@ -964,6 +964,19 @@ class MemoComponent {
     // 保存更新后的内容
     await window.memoManager.saveMemo(content);
   }
+  
+  /**
+   * 清空备忘录内容
+   */
+  clearContent() {
+    if (!this.memoContent) return;
+    
+    // 清空内容
+    this.memoContent.innerHTML = '';
+    
+    // 隐藏备忘录
+    this.hide();
+  }
 }
 
 // 创建全局单例实例

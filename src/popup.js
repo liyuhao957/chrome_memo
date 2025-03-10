@@ -364,6 +364,17 @@ document.addEventListener('DOMContentLoaded', async function() {
       // 如果是当前站点，更新状态
       if (currentTab && new URL(currentTab.url).hostname === domain) {
         await checkCurrentSiteMemo();
+        
+        // 向当前页面发送消息，通知备忘录已被删除
+        try {
+          await chrome.tabs.sendMessage(currentTab.id, { 
+            action: 'memoDeleted',
+            domain: domain
+          });
+          console.log('已通知当前页面备忘录已删除');
+        } catch (error) {
+          console.error('通知当前页面失败:', error);
+        }
       }
       
       // 重新加载站点列表

@@ -194,6 +194,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       deleteMemo(domain)
         .then(result => {
+          // 如果删除成功，向所有标签页发送通知
+          if (result) {
+            // 查询所有标签页
+            chrome.tabs.query({}, (tabs) => {
+              // 遍历所有标签页
+              tabs.forEach(tab => {
+                try {
+                  // 检查标签页的域名是否与被删除的域名匹配
+                  const tabUrl = new URL(tab.url);
+                  if (tabUrl.hostname === domain) {
+                    // 向匹配的标签页发送通知
+                    chrome.tabs.sendMessage(tab.id, { 
+                      action: 'memoDeleted',
+                      domain: domain
+                    }).catch(err => {
+                      console.log('Tab may not have content script:', tab.id);
+                    });
+                  }
+                } catch (e) {
+                  // 忽略无效的URL或发送失败的标签页
+                }
+              });
+            });
+          }
+          
           sendResponse({ success: result });
         })
         .catch(error => {

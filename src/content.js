@@ -103,6 +103,19 @@ function handleMessages(message, sender, sendResponse) {
         sendResponse({ success: true });
         break;
         
+      case 'memoDeleted':
+        // 备忘录已被删除，清空并隐藏备忘录
+        console.log('收到备忘录删除通知，清空并隐藏备忘录');
+        if (window.memoComponent) {
+          // 使用clearContent方法清空并隐藏备忘录
+          window.memoComponent.clearContent();
+          
+          // 重新初始化备忘录组件，确保状态一致
+          window.memoComponent.initialize(openEditor);
+        }
+        sendResponse({ success: true });
+        break;
+        
       case 'addSelectionToMemo':
         // 添加选中文本到备忘录
         if (message.text) {

@@ -233,9 +233,8 @@ class MemoComponent {
     resetPositionButton.className = 'header-button reset-button';
     resetPositionButton.innerHTML = `
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <line x1="9" y1="9" x2="15" y2="15"></line>
-        <line x1="15" y1="9" x2="9" y2="15"></line>
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+        <path d="M3 3v5h5"></path>
       </svg>
     `;
     resetPositionButton.title = '重置位置';

@@ -95,6 +95,10 @@ class SelectionUtils {
     this.selectionPopup.style.display = 'none';
     this.selectionPopup.style.zIndex = '2147483647'; // 确保最高层级
     
+    // 设置初始位置在屏幕外，避免闪烁
+    this.selectionPopup.style.left = '-9999px';
+    this.selectionPopup.style.top = '-9999px';
+    
     const addButton = document.createElement('button');
     addButton.className = 'add-to-memo-btn';
     addButton.textContent = '添加到备忘录';
@@ -164,11 +168,13 @@ class SelectionUtils {
             height: rect.height
           });
           
+          // 计算弹出框位置 - 直接定位在文本上方
+          const popupX = rect.left + window.scrollX + (rect.width / 2);
+          // 将弹出框定位在文本上方，加上一定的偏移量确保不遮挡文本
+          const popupY = rect.top + window.scrollY - 30; // 增加偏移量，确保在文本上方
+          
           // 显示弹出框在选择文本上方
-          this.showSelectionPopup(
-            rect.left + window.scrollX + (rect.width / 2),
-            rect.top + window.scrollY - 10
-          );
+          this.showSelectionPopup(popupX, popupY);
           
           // 防止点击事件隐藏弹出框
           if (event) event.stopPropagation();
@@ -304,14 +310,29 @@ class SelectionUtils {
     const popupWidth = 120; // 估计宽度
     const popupHeight = 40; // 估计高度
     
+    // 水平位置居中，由transform: translateX(-50%)处理
     let posX = Math.min(Math.max(x, popupWidth / 2), viewportWidth - popupWidth / 2);
-    let posY = Math.max(y, popupHeight);
     
+    // 垂直位置，确保不超出视口顶部
+    let posY = Math.max(y, 0);
+    
+    // 确保不超出视口底部
+    if (posY + popupHeight > viewportHeight) {
+      posY = viewportHeight - popupHeight;
+    }
+    
+    // 先设置位置，再显示，避免闪烁
     this.selectionPopup.style.left = `${posX}px`;
     this.selectionPopup.style.top = `${posY}px`;
-    this.selectionPopup.style.display = 'block';
     
-    console.log('显示选中文本弹出框');
+    // 确保元素已经隐藏，然后再显示，避免位置跳动
+    this.selectionPopup.style.display = 'none';
+    
+    // 使用requestAnimationFrame确保在下一帧渲染时显示，避免闪烁
+    requestAnimationFrame(() => {
+      this.selectionPopup.style.display = 'block';
+      console.log('显示选中文本弹出框，位置:', { x: posX, y: posY });
+    });
   }
   
   /**

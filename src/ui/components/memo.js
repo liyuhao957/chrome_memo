@@ -156,6 +156,29 @@ class MemoComponent {
         padding: 2px;
       }
       
+      .header-button:hover {
+        opacity: 0.8;
+      }
+      
+      .copy-success {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+      }
+      
+      .copy-success.show {
+        opacity: 1;
+      }
+      
       .memo-content {
         padding: 10px;
         max-height: 300px;
@@ -182,6 +205,17 @@ class MemoComponent {
     // 头部操作区
     const headerActions = document.createElement('div');
     headerActions.className = 'header-actions';
+    
+    // 复制按钮
+    const copyButton = document.createElement('button');
+    copyButton.className = 'header-button copy-button';
+    copyButton.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+    `;
+    copyButton.title = '复制内容';
     
     // 编辑按钮
     const editButton = document.createElement('button');
@@ -232,10 +266,16 @@ class MemoComponent {
     content.className = 'memo-content';
     content.innerHTML = memoData && memoData.content ? memoData.content : '';
     
+    // 创建复制成功提示
+    const copySuccess = document.createElement('div');
+    copySuccess.className = 'copy-success';
+    copySuccess.textContent = '复制成功！';
+    
     // 保存内容元素的引用
     this.memoContent = content;
     
     // 添加按钮到头部操作区
+    headerActions.appendChild(copyButton);
     headerActions.appendChild(editButton);
     headerActions.appendChild(resetPositionButton);
     headerActions.appendChild(minimizeButton);
@@ -248,6 +288,7 @@ class MemoComponent {
     // 将头部和内容区添加到备忘录内部容器
     memoInner.appendChild(header);
     memoInner.appendChild(content);
+    memoInner.appendChild(copySuccess);
     
     // 将样式和内部容器添加到Shadow DOM
     shadowRoot.appendChild(style);
@@ -257,6 +298,16 @@ class MemoComponent {
     document.body.appendChild(this.memoContainer);
     
     // 添加事件监听器
+    copyButton.addEventListener('click', () => {
+      this.copyMemoContent();
+      
+      // 显示复制成功提示
+      copySuccess.classList.add('show');
+      setTimeout(() => {
+        copySuccess.classList.remove('show');
+      }, 2000);
+    });
+    
     editButton.addEventListener('click', () => {
       if (this.onEditClick) {
         this.onEditClick(this.memoContent.innerHTML);
@@ -280,6 +331,67 @@ class MemoComponent {
     
     // 创建悬浮图标
     this.createFloatingIcon();
+  }
+  
+  /**
+   * 复制备忘录内容到剪贴板
+   */
+  copyMemoContent() {
+    if (!this.memoContent) return;
+    
+    try {
+      // 获取纯文本内容
+      const text = this.memoContent.innerText || this.memoContent.textContent;
+      
+      // 使用Clipboard API复制文本
+      navigator.clipboard.writeText(text).then(() => {
+        console.log('备忘录内容已复制到剪贴板');
+      }).catch(err => {
+        console.error('复制失败:', err);
+        
+        // 如果Clipboard API失败，尝试使用传统方法
+        this.fallbackCopy(text);
+      });
+    } catch (error) {
+      console.error('复制过程中出错:', error);
+      
+      // 尝试使用传统方法
+      this.fallbackCopy(this.memoContent.innerText || this.memoContent.textContent);
+    }
+  }
+  
+  /**
+   * 备用复制方法
+   * @param {string} text - 要复制的文本
+   */
+  fallbackCopy(text) {
+    try {
+      // 创建临时文本区域
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      
+      // 设置样式使其不可见
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.top = '-9999px';
+      
+      // 添加到文档
+      document.body.appendChild(textArea);
+      
+      // 选择文本
+      textArea.select();
+      textArea.setSelectionRange(0, 99999); // 兼容移动设备
+      
+      // 复制
+      document.execCommand('copy');
+      
+      // 移除临时元素
+      document.body.removeChild(textArea);
+      
+      console.log('使用备用方法复制成功');
+    } catch (err) {
+      console.error('备用复制方法也失败了:', err);
+    }
   }
   
   /**

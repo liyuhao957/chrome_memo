@@ -88,8 +88,10 @@ class EditorComponent {
       const btnElement = document.createElement('button');
       btnElement.title = button.title;
       btnElement.innerHTML = button.icon;
+      btnElement.dataset.command = button.command;
       btnElement.addEventListener('click', () => {
         document.execCommand(button.command);
+        this.updateFormatButtonsState();
         this.editor.focus();
       });
       toolbar.appendChild(btnElement);
@@ -121,6 +123,10 @@ class EditorComponent {
     this.editor.contentEditable = true;
     this.editor.setAttribute('placeholder', '在此处输入备忘录内容...');
     
+    // 监听编辑器内容变化，更新格式按钮状态
+    this.editor.addEventListener('keyup', () => this.updateFormatButtonsState());
+    this.editor.addEventListener('mouseup', () => this.updateFormatButtonsState());
+    
     // 组装编辑器
     this.container.appendChild(header);
     this.container.appendChild(toolbar);
@@ -145,12 +151,49 @@ class EditorComponent {
     
     buttons.forEach(button => {
       button.addEventListener('mouseenter', () => {
-        button.style.backgroundColor = '#f0f0f0';
+        if (!button.classList.contains('active')) {
+          button.style.backgroundColor = '#f0f0f0';
+        }
       });
       
       button.addEventListener('mouseleave', () => {
-        button.style.backgroundColor = 'transparent';
+        if (!button.classList.contains('active')) {
+          button.style.backgroundColor = 'transparent';
+        }
       });
+    });
+  }
+  
+  /**
+   * 更新格式按钮的状态
+   * 根据当前选中文本的格式，高亮显示对应的格式按钮
+   */
+  updateFormatButtonsState() {
+    if (!this.container) return;
+    
+    const toolbar = this.container.querySelector('.chrome-memo-editor-toolbar');
+    const buttons = toolbar.querySelectorAll('button');
+    
+    // 检查每个格式按钮对应的命令状态
+    buttons.forEach(button => {
+      const command = button.dataset.command;
+      if (!command) return;
+      
+      // 检查命令是否处于激活状态
+      const isActive = document.queryCommandState(command);
+      
+      // 更新按钮样式
+      if (isActive) {
+        button.classList.add('active');
+        button.style.backgroundColor = '#e0e0ff';
+        button.style.color = '#7c4dff';
+        button.style.fontWeight = 'bold';
+      } else {
+        button.classList.remove('active');
+        button.style.backgroundColor = 'transparent';
+        button.style.color = '';
+        button.style.fontWeight = '';
+      }
     });
   }
   
@@ -208,6 +251,12 @@ class EditorComponent {
     requestAnimationFrame(() => {
       this.container.style.display = 'flex';
       this.isOpen = true;
+      
+      // 更新格式按钮状态
+      setTimeout(() => {
+        this.updateFormatButtonsState();
+      }, 100);
+      
       this.editor.focus();
     });
   }

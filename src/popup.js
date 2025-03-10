@@ -245,37 +245,133 @@ document.addEventListener('DOMContentLoaded', async function() {
     const li = document.createElement('li');
     li.className = 'site-item';
     
-    // 提取文本内容
-    const textContent = extractTextContent(site.content);
+    const header = document.createElement('div');
+    header.className = 'site-header';
     
-    // 格式化日期
-    const formattedDate = formatDate(site.updatedAt);
+    const domain = document.createElement('div');
+    domain.className = 'site-domain';
     
-    li.innerHTML = `
-      <div class="site-header">
-        <div class="site-domain">
-          <a href="${site.url}" target="_blank" title="${site.title}">${site.domain}</a>
-        </div>
-        <button class="delete-site" data-domain="${site.domain}">删除</button>
-      </div>
-      <div class="site-content">${textContent}</div>
-      <span class="site-date">更新于: ${formattedDate}</span>
+    const link = document.createElement('a');
+    link.href = site.url;
+    link.textContent = site.domain;
+    link.title = site.url;
+    link.target = '_blank';
+    
+    domain.appendChild(link);
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-site';
+    deleteBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        <line x1="10" y1="11" x2="10" y2="17"></line>
+        <line x1="14" y1="11" x2="14" y2="17"></line>
+      </svg>
     `;
+    deleteBtn.title = '删除备忘录';
+    deleteBtn.dataset.domain = site.domain;
     
-    // 添加删除事件
-    const deleteBtn = li.querySelector('.delete-site');
-    deleteBtn.addEventListener('click', async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
+    header.appendChild(domain);
+    header.appendChild(deleteBtn);
+    
+    const content = document.createElement('div');
+    content.className = 'site-content';
+    content.textContent = extractTextContent(site.content);
+    
+    const date = document.createElement('div');
+    date.className = 'site-date';
+    date.textContent = `更新于: ${formatDate(site.updatedAt)}`;
+    
+    li.appendChild(header);
+    li.appendChild(content);
+    li.appendChild(date);
+    
+    // 添加删除按钮事件
+    deleteBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       
       const domain = deleteBtn.dataset.domain;
       
-      if (confirm(`确定要删除 ${domain} 的备忘录吗？`)) {
+      // 使用自定义确认对话框替代原生confirm
+      const confirmed = await showCustomConfirm(`确定要删除备忘录吗？`, domain);
+      if (confirmed) {
         await deleteSite(domain);
       }
     });
     
     return li;
+  }
+  
+  // 自定义确认对话框
+  function showCustomConfirm(message, domain) {
+    return new Promise((resolve) => {
+      // 创建遮罩层
+      const overlay = document.createElement('div');
+      overlay.className = 'custom-confirm-overlay';
+      
+      // 创建对话框
+      const dialog = document.createElement('div');
+      dialog.className = 'custom-confirm-dialog';
+      
+      // 创建标题
+      const header = document.createElement('div');
+      header.className = 'custom-confirm-header';
+      header.textContent = '扩展程序网站备忘录提示';
+      
+      // 创建内容
+      const content = document.createElement('div');
+      content.className = 'custom-confirm-content';
+      content.innerHTML = `${message}<span class="custom-confirm-domain">${domain}</span>`;
+      
+      // 创建按钮容器
+      const buttons = document.createElement('div');
+      buttons.className = 'custom-confirm-buttons';
+      
+      // 取消按钮
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'custom-confirm-button custom-confirm-cancel';
+      cancelBtn.textContent = '取消';
+      cancelBtn.addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        resolve(false);
+      });
+      
+      // 确认按钮
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'custom-confirm-button custom-confirm-delete';
+      confirmBtn.textContent = '确定';
+      confirmBtn.addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        resolve(true);
+      });
+      
+      // 组装对话框
+      buttons.appendChild(cancelBtn);
+      buttons.appendChild(confirmBtn);
+      dialog.appendChild(header);
+      dialog.appendChild(content);
+      dialog.appendChild(buttons);
+      overlay.appendChild(dialog);
+      
+      // 添加到页面
+      document.body.appendChild(overlay);
+      
+      // 聚焦确认按钮
+      confirmBtn.focus();
+      
+      // 添加ESC键关闭
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+          document.body.removeChild(overlay);
+          document.removeEventListener('keydown', handleKeyDown);
+          resolve(false);
+        }
+      };
+      
+      document.addEventListener('keydown', handleKeyDown);
+    });
   }
   
   // 提取HTML中的文本内容

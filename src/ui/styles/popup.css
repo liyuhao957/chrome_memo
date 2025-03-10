@@ -168,18 +168,18 @@ button:disabled {
 
 /* 站点项 */
 .site-item {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  margin-bottom: 10px;
-  padding: 12px;
-  background: white;
+  background-color: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .site-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-  border-color: #d0d0d0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .site-item:last-child {
@@ -191,63 +191,80 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 /* 站点域名 */
 .site-domain {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
   font-size: 14px;
-  text-overflow: ellipsis;
+  color: #333;
   overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 200px;
+  flex: 1;
 }
 
 .site-domain a {
-  color: #7c4dff;
+  color: #6366f1;
   text-decoration: none;
+  transition: color 0.2s;
 }
 
 .site-domain a:hover {
+  color: #4f46e5;
   text-decoration: underline;
 }
 
 /* 站点内容预览 */
 .site-content {
-  color: #666;
   font-size: 13px;
-  line-height: 1.4;
-  max-height: 2.8em;
+  color: #666;
+  margin-bottom: 10px;
+  line-height: 1.5;
+  max-height: 60px;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
 /* 站点更新日期 */
 .site-date {
-  display: block;
-  color: #999;
   font-size: 12px;
-  margin-top: 4px;
+  color: #999;
+  display: block;
+  text-align: right;
+  font-style: italic;
 }
 
 /* 删除站点按钮 */
 .delete-site {
-  padding: 4px 8px;
-  background: #ff4d4f;
-  color: white;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
   border: none;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 12px;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  padding: 0;
+  margin-left: 8px;
 }
 
 .delete-site:hover {
-  background: #ff7875;
+  background-color: rgba(239, 68, 68, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.2);
+}
+
+.delete-site svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
 }
 
 /* 空列表提示 */
@@ -385,4 +402,124 @@ button:disabled {
 
 .templates-link:hover {
   text-decoration: underline;
+}
+
+/* 自定义确认弹窗 */
+.custom-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.2s ease;
+}
+
+.custom-confirm-dialog {
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 85%;
+  max-width: 320px;
+  overflow: hidden;
+  animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.custom-confirm-header {
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  position: relative;
+}
+
+.custom-confirm-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.custom-confirm-content {
+  padding: 20px;
+  text-align: center;
+  color: #333;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.custom-confirm-domain {
+  font-weight: 600;
+  color: #6366f1;
+  display: block;
+  margin: 8px 0;
+  word-break: break-all;
+}
+
+.custom-confirm-buttons {
+  display: flex;
+  padding: 0 20px 20px;
+  gap: 12px;
+}
+
+.custom-confirm-button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.custom-confirm-cancel {
+  background-color: #f5f5f5;
+  color: #555;
+  border: 1px solid #e0e0e0;
+}
+
+.custom-confirm-cancel:hover {
+  background-color: #eeeeee;
+  transform: translateY(-1px);
+}
+
+.custom-confirm-delete {
+  background-color: #ef4444;
+  color: white;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
+}
+
+.custom-confirm-delete:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
 } 
